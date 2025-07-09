@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import type { UserProfile, Photo } from '../types';
 import { PhotoStatus } from '../types';
@@ -28,10 +27,9 @@ interface PhotoSorterProps {
 const PhotoSorter: React.FC<PhotoSorterProps> = ({ userProfile, onProfileUpdate }) => {
   const {
     photos,
-    directoryPath,
-    setDirectoryPath,
     statusMessage,
     isLoading,
+    isApiSupported,
     handleLoadPhotos,
     handleSelectPhoto,
     selectedPhotos,
@@ -57,9 +55,6 @@ const PhotoSorter: React.FC<PhotoSorterProps> = ({ userProfile, onProfileUpdate 
   const noAnalyzedPhotos = useMemo(() =>
           Array.from(photos.values()).every(p => p.status !== PhotoStatus.ANALYZED),
       [photos]);
-
-  console.log("No analysed photo", noAnalyzedPhotos)
-  console.log("loading", isLoading)
 
   // --- RENDER ---
   return (
@@ -88,9 +83,13 @@ const PhotoSorter: React.FC<PhotoSorterProps> = ({ userProfile, onProfileUpdate 
           <div className="mb-6">
             <label className="font-semibold mb-2 flex items-center gap-2"><FolderOpen className="w-5 h-5 text-secondary" /> Load Photos</label>
             <div className="flex gap-2">
-              <input type="text" value={directoryPath} onChange={(e) => setDirectoryPath(e.target.value)} placeholder="Enter directory path..." className="flex-grow w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-primary focus:outline-none transition"/>
-              <button onClick={handleLoadPhotos} disabled={isLoading} className="px-4 py-2 bg-primary text-white font-semibold rounded-md hover:bg-primary-dark transition disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center">
-                {isLoading ? <Spinner className="w-5 h-5"/> : 'Load'}
+              <button
+                  onClick={handleLoadPhotos}
+                  disabled={isLoading || !isApiSupported}
+                  className="w-full px-4 py-2 bg-primary text-white font-semibold rounded-md hover:bg-primary-dark transition disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
+                  title={!isApiSupported ? "Your browser is not supported for this feature." : "Select a directory to load photos"}
+              >
+                {isLoading ? <Spinner className="w-5 h-5"/> : 'Select Directory'}
               </button>
             </div>
           </div>
@@ -158,7 +157,7 @@ const PhotoSorter: React.FC<PhotoSorterProps> = ({ userProfile, onProfileUpdate 
               <div className="flex flex-col items-center justify-center h-full text-center text-gray-500 dark:text-gray-400">
                 <FolderOpen className="w-24 h-24 mb-4 text-gray-300 dark:text-gray-600" />
                 <h2 className="text-2xl font-semibold">Your workspace is empty</h2>
-                <p className="mt-2 max-w-sm">Enter a directory path on the left and click 'Load' to begin your photo sorting adventure!</p>
+                <p className="mt-2 max-w-sm">Click 'Select Directory' on the left to begin your photo sorting adventure!</p>
               </div>
           ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-4">
