@@ -1,36 +1,46 @@
 
 import type { Prediction } from '../types';
+import * as cocoSsd from '@tensorflow-models/coco-ssd';
+import '@tensorflow/tfjs'; // Necessary to initialize the backend
 
-const BACKEND_URL = 'http://localhost:5000';
+// A singleton promise to ensure the model is loaded only once.
+let modelPromise: Promise<cocoSsd.ObjectDetection> | null = null;
 
-export const base64ToBlob = (base64: string, mimeType: string = 'image/jpeg'): Blob => {
-  const byteCharacters = atob(base64);
-  const byteNumbers = new Array(byteCharacters.length);
-  for (let i = 0; i < byteCharacters.length; i++) {
-    byteNumbers[i] = byteCharacters.charCodeAt(i);
+const getModel = (): Promise<cocoSsd.ObjectDetection> => {
+  if (!modelPromise) {
+    // Load the COCO-SSD model.
+    modelPromise = cocoSsd.load();
   }
-  const byteArray = new Uint8Array(byteNumbers);
-  return new Blob([byteArray], { type: mimeType });
+  return modelPromise;
 };
 
+// This function now runs the object detection model directly in the browser.
 export const detectObjects = async (base64Image: string): Promise<Prediction[]> => {
-  const blob = base64ToBlob(base64Image);
-  const file = new File([blob], "image.jpg", { type: 'image/jpeg' });
+  const model = await getModel();
 
-  const formData = new FormData();
-  formData.append('file', file);
+  // Create an Image element from the base64 string
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.src = `data:image/jpeg;base64,${base64Image}`;
 
-  const response = await fetch(`${BACKEND_URL}/detect`, {
-    method: 'POST',
-    body: formData,
+    img.onload = async () => {
+      try {
+        const predictions = await model.detect(img);
+        // Map the model's output to the application's Prediction type
+        resolve(predictions.map(p => ({
+          label: p.class,
+          score: p.score,
+        })));
+      } catch (error) {
+        console.error('Error during object detection:', error);
+        reject(error);
+      }
+    };
+
+    img.onerror = () => {
+      const errorMessage = 'Failed to load image for detection.';
+      console.error(errorMessage);
+      reject(new Error(errorMessage));
+    };
   });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.error || 'Failed to detect objects');
-  }
-
-  const predictions = await response.json();
-  // Ensure score is a number between 0 and 1
-  return predictions.map((p: any) => ({ ...p, score: p.score }));
 };

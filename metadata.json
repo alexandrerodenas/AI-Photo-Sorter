@@ -1,6 +1,7 @@
+
 {
   "name": "AI Photo Sorter",
-  "description": "An intelligent web application to automatically sort and manage your photos using AI-powered analysis. Load photos from a local directory, view predictions, and apply custom rules to keep your collection organized.",
+  "description": "An intelligent web application to automatically sort and manage your photos using a machine learning model that runs entirely in your browser. Your photos are never uploaded, ensuring complete privacy.",
   "requestFramePermissions": [],
   "prompt": ""
 }
