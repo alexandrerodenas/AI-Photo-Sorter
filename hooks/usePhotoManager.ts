@@ -1,3 +1,39 @@
+
+// --- File System Access API type definitions for browser compatibility ---
+// This ensures TypeScript can compile features that are present in modern browsers
+// but may not be in the default TypeScript library definitions.
+declare global {
+    interface Window {
+        showDirectoryPicker(options?: any): Promise<FileSystemDirectoryHandle>;
+    }
+
+    interface FileSystemHandle {
+        readonly kind: 'file' | 'directory';
+        readonly name: string;
+    }
+
+    interface FileSystemFileHandle extends FileSystemHandle {
+        readonly kind: 'file';
+        getFile(): Promise<File>;
+        createWritable(): Promise<FileSystemWritableFileStream>;
+    }
+
+    interface FileSystemDirectoryHandle extends FileSystemHandle {
+        readonly kind: 'directory';
+        getDirectoryHandle(name: string, options?: { create?: boolean }): Promise<FileSystemDirectoryHandle>;
+        getFileHandle(name: string, options?: { create?: boolean }): Promise<FileSystemFileHandle>;
+        removeEntry(name: string, options?: { recursive?: boolean }): Promise<void>;
+        resolve(possibleDescendant: FileSystemHandle): Promise<string[] | null>;
+        values(): AsyncIterableIterator<FileSystemFileHandle | FileSystemDirectoryHandle>;
+    }
+
+    // This is a placeholder for FileSystemWritableFileStream to satisfy FileSystemFileHandle.
+    // The app doesn't use its methods, so an empty interface is sufficient.
+    // eslint-disable-next-line @typescript-eslint/no-empty-interface
+    interface FileSystemWritableFileStream extends WritableStream {}
+}
+// --- End of File System Access API type definitions ---
+
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import type { UserProfile, Photo, FilterRule } from '../types';
 import { PhotoStatus } from '../types';
@@ -54,8 +90,9 @@ export const usePhotoManager = (userProfile: UserProfile) => {
     useEffect(() => {
         if (isLoading && analysisProgress.total > 0) {
             const { processed, total } = analysisProgress;
-            setStatusMessage(`Analyzing... (${processed}/${total})`);
-            if (processed === total) {
+            if (total > 0 && processed < total) {
+                setStatusMessage(`Analyzing... (${processed}/${total})`);
+            } else if (processed === total && total > 0) {
                 setIsLoading(false);
                 setStatusMessage(`Analysis complete! ${total} photos ready. ✅`);
             }
@@ -215,7 +252,7 @@ export const usePhotoManager = (userProfile: UserProfile) => {
             setStatusMessage(`Deleted ${deletedCount} of ${photosToDelete.length} photos. Some deletions failed.`);
             // Potentially add back photos that failed to delete, or prompt user to reload.
         }
-    }, [selectedPhotos, setPhotos, setStatusMessage]);
+    }, [selectedPhotos]);
 
     const handleApplyRulesManually = useCallback(() => {
         const photosToProcess = Array.from(photosRef.current.values()).filter(p => p.status === PhotoStatus.ANALYZED);

@@ -1,81 +1,49 @@
 
 # AI Photo Sorter
 
-An intelligent web application designed to automatically sort and manage your photos using AI-powered analysis. Load photos from a local directory, view AI-generated predictions, and apply custom rules to keep your collection effortlessly organized.
+An intelligent web application to automatically sort and manage your photos using AI-powered analysis. Load photos from a local directory, view AI-generated tags, and apply custom rules to keep your collection organized.
 
 ## ✨ Features
 
--   **Load from Local Directory**: Securely connect to a local directory on your machine to stream and analyze photos. This requires a backend component with access to your filesystem.
--   **AI-Powered Object Detection**: Each photo is automatically analyzed to identify objects and content, providing you with a list of labels and confidence scores.
--   **Interactive Photo Gallery**: View your photos in a responsive grid. See their analysis status (Queued, Analyzing, Analyzed) at a glance.
--   **Customizable Filter Rules**: Create powerful rules to automatically select photos. For example, "Select all photos with 'cat' and confidence > 80%".
--   **Manual & Automatic Operation**: Choose to have your rules applied automatically as photos are loaded, or apply them manually with a single click.
--   **Bulk Actions**:
-   -   **Select All / Clear All**: Quickly select or deselect all analyzed photos.
-   -   **Delete Selected**: Permanently delete selected photos from your file system after review.
--   **Import/Export Profiles**: Save your complete user profile (name and all custom rules) to a JSON file. This is great for backing up your settings or transferring them to another browser or machine.
--   **Detailed Photo Viewer**: Double-click any photo to open a detailed view with a larger image and a complete list of its AI predictions.
--   **Persistent User Profiles**: Your name and custom rules are saved in your browser's local storage for a personalized experience every time you visit.
--   **Modern & Responsive UI**: Built with React and Tailwind CSS, the interface is clean, intuitive, and works beautifully across different screen sizes.
+-   **Local Directory Loading**: Securely load photos directly from your computer's file system. No uploads required!
+-   **Client-Side AI-Powered Object Detection**: Automatically analyze photos to identify objects using a machine learning model that runs **entirely in your browser**. Your photos are never uploaded, ensuring complete privacy.
+-   **Customizable Filter Rules**: Create rules to automatically select photos based on detected labels and confidence scores (e.g., "select all photos with 'cat' at >80% confidence").
+-   **Manual & Automatic Rule Application**: Apply your custom rules with a single click or have them run automatically when photos are loaded.
+-   **Interactive Photo Gallery**: View, select, and manage your photos in a responsive and intuitive grid.
+-   **Photo Viewer**: Double-click a photo to see a larger view and detailed AI predictions.
+-   **Bulk Deletion**: Select multiple photos and permanently delete them from your local disk.
+-   **Profile Management**: Save your preferences and rules in a user profile that can be exported and imported.
 
-## 🚀 How to Use
+## 🧠 How It Works
 
-1.  **Onboarding**: The first time you launch the application, you'll be asked for your name to personalize your workspace. Some default rules are created to get you started.
+This application leverages the power of **TensorFlow.js** to run a state-of-the-art object detection model (COCO-SSD) directly in your web browser.
 
-2.  **Load Photos**:
-   -   In the sidebar, enter the full path to a directory on your computer containing the photos you want to sort.
-   -   Click the **Load** button. The application will connect to the backend, find your photos, and begin streaming them for analysis.
+-   **100% Client-Side**: All processing, including the AI analysis, happens on your computer.
+-   **Privacy First**: Your photos are never sent to a server. They remain on your local machine at all times.
+-   **Offline Capable**: Once the application and the model are loaded, you can disconnect from the internet and continue sorting your photos.
 
-3.  **Interact with Photos**:
-   -   As photos are loaded, they will appear in the main content area.
-   -   **Single-click** a photo to select or deselect it. Selected photos are highlighted with an accent color border.
-   -   **Double-click** a photo to open the detailed viewer, where you can see a larger preview and the full list of AI predictions.
 
-4.  **Manage Your Rules**:
-   -   Click the **Settings icon** (⚙️) next to your name to open the Profile & Rules editor.
-   -   Here you can:
-      -   Change your name.
-      -   Toggle whether rules are applied automatically on load.
-      -   **Add new rules** by specifying a label (e.g., "dog", "car") and a minimum confidence level.
-      -   **Delete** existing rules.
-      -   **Export Profile**: Click the `Export` button to save your current name and rules to a `.json` file on your computer. This is useful for backups or sharing your configuration.
-      -   **Import Profile**: Click the `Import` button to load a profile from a `.json` file. The imported settings will populate the editor, and you can save them to apply them to your workspace.
+## 🚀 Getting Started
 
-5.  **Apply Actions**:
-   -   **Apply Manual Rules**: Click this to select all photos that match your currently defined rules without deselecting any photos you've manually selected.
-   -   **Select All / Clear All**: Use these buttons for quick bulk selection management.
-   -   **Delete Selected**: Once you have reviewed your selection, click this button to permanently delete the chosen photos from your directory.
+1.  Open the `index.html` file in your browser.
+2.  You'll be prompted to enter your name to create a user profile.
+3.  Click the "Select Directory" button.
+4.  Choose a folder on your computer that contains photos.
+5.  The application will begin scanning and analyzing your images. This may take a moment the first time as the AI model is loaded.
+6.  Use the filters, rules, and selection tools to manage your photos.
 
-## 🛠️ Technical Stack
+## ⚠️ Browser Compatibility
 
--   **Frontend**: React, TypeScript, Tailwind CSS, Lucide Icons
--   **Backend**: The application requires a backend server (e.g., Python with Flask/FastAPI or Node.js with Express) to handle:
-   -   File system access for reading and deleting photos.
-   -   Serving photos to the frontend via a WebSocket stream.
-   -   Interfacing with an object detection model for AI analysis.
+This application uses the modern **File System Access API** (`window.showDirectoryPicker`) to allow you to select and interact with local directories directly in the browser. This API provides enhanced security and performance.
 
-## 🔧 Setup and Installation (For Developers)
+**As a result, full functionality is only available on browsers that support this API.**
 
-This project consists of a frontend application and requires a corresponding backend service to be running.
+-   ✅ **Supported Browsers**:
+    -   Google Chrome (version 86+)
+    -   Microsoft Edge (version 86+)
 
-### Frontend
+-   ❌ **Unsupported Browsers**:
+    -   Firefox (all versions)
+    -   Safari (all versions)
 
-1.  Clone the repository.
-2.  Navigate to the project directory: `cd [project-name]`
-3.  Install dependencies:
-    ```bash
-    npm install
-    ```
-4.  Run the development server (assuming a standard React setup):
-    ```bash
-    npm run start 
-    ```
-    The application will be available at `http://localhost:3000`.
-
-### Backend
-
-You must have a backend server running that exposes the following endpoints (as expected by `services/api.ts`):
--   `POST /detect`: Accepts an image file and returns an array of predictions (`[{label: string, score: number}]`).
--   `DELETE /photos/{path}`: Deletes a photo at the given URL-encoded path.
--   `GET /photos?directory={path}`: Checks if a directory is valid and returns the number of photos (`{count: number}`).
--   A WebSocket endpoint at `http://localhost:5000` that listens for a `stream_photos` event and streams back `photo` events with `{path: string, binary: string}` data.
+If you open this application in an unsupported browser, the "Select Directory" feature will be disabled, and a message will inform you of the incompatibility. For the best experience, please use a recent version of Chrome or Edge.

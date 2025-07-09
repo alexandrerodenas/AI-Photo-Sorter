@@ -9,13 +9,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@types/react": "^18.3.3",
-    "@types/react-dom": "^18.3.0",
-    "@types/wicg-file-system-access": "^2023.10.6",
-    "lucide-react": "^0.525.0",
-    "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "socket.io-client": "^4.8.1"
+    "@types/react-dom": "^18.3.0",
+    "react": "^19.1.0",
+    "@types/react": "^18.3.3",
+    "lucide-react": "^0.525.0",
+    "@tensorflow/tfjs": "^4.20.0",
+    "@tensorflow-models/coco-ssd": "^2.2.3",
+    "@types/wicg-file-system-access": "^2023.10.6"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
