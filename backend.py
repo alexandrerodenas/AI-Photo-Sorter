@@ -21,7 +21,7 @@ resnet_model = ResNet152(weights='imagenet')
 app = Flask(__name__)
 CORS(app)
 
-socketio = SocketIO(app, cors_allowed_origins=["http://localhost:5173"])
+socketio = SocketIO(app, cors_allowed_origins=["http://localhost:5174"])
 
 def is_photo(file):
     return file.endswith(('.png', '.jpg', '.jpeg'))

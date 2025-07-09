@@ -1,16 +1,37 @@
-
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import type { UserProfile, Photo, FilterRule } from '../types';
 import { PhotoStatus } from '../types';
 import * as api from '../services/api';
 
+// Helper to recursively delete a file by its relative path from a directory handle
+async function deleteFileByPath(dirHandle: FileSystemDirectoryHandle, path: string): Promise<boolean> {
+    const pathParts = path.split('/');
+    const fileName = pathParts.pop();
+    let currentDirHandle = dirHandle;
+
+    if (!fileName) return false;
+
+    try {
+        // Navigate to the correct subdirectory
+        for (const part of pathParts) {
+            currentDirHandle = await currentDirHandle.getDirectoryHandle(part, { create: false });
+        }
+        await currentDirHandle.removeEntry(fileName);
+        return true;
+    } catch (error) {
+        console.error(`Failed to delete file ${path}:`, error);
+        return false;
+    }
+}
+
 export const usePhotoManager = (userProfile: UserProfile) => {
     const [photos, setPhotos] = useState<Map<string, Photo>>(new Map());
-    const [directoryPath, setDirectoryPath] = useState<string>('');
     const [statusMessage, setStatusMessage] = useState<string>('Ready to sort some photos! 🥳');
     const [isLoading, setIsLoading] = useState<boolean>(false);
+    const [analysisProgress, setAnalysisProgress] = useState({ processed: 0, total: 0 });
+    const [isApiSupported, setIsApiSupported] = useState(true);
 
-    const streamTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const directoryHandleRef = useRef<FileSystemDirectoryHandle | null>(null);
     const photosRef = useRef(photos);
     const userProfileRef = useRef(userProfile);
 
@@ -21,6 +42,25 @@ export const usePhotoManager = (userProfile: UserProfile) => {
     useEffect(() => {
         userProfileRef.current = userProfile;
     }, [userProfile]);
+
+    useEffect(() => {
+        if (!window.showDirectoryPicker) {
+            setIsApiSupported(false);
+            setStatusMessage('Browser not supported. Use Chrome or Edge for directory access.');
+            console.warn("File System Access API (`showDirectoryPicker`) is not supported in this browser.");
+        }
+    }, []);
+
+    useEffect(() => {
+        if (isLoading && analysisProgress.total > 0) {
+            const { processed, total } = analysisProgress;
+            setStatusMessage(`Analyzing... (${processed}/${total})`);
+            if (processed === total) {
+                setIsLoading(false);
+                setStatusMessage(`Analysis complete! ${total} photos ready. ✅`);
+            }
+        }
+    }, [analysisProgress, isLoading]);
 
     const applyFilterRules = useCallback((photo: Photo, rules: FilterRule[]): boolean => {
         for (const rule of rules) {
@@ -55,70 +95,83 @@ export const usePhotoManager = (userProfile: UserProfile) => {
         } catch (error) {
             console.error(`Failed to analyze ${photoId}:`, error);
             setPhotos(prev => new Map(prev).set(photoId, { ...prev.get(photoId)!, status: PhotoStatus.ERROR }));
+        } finally {
+            setAnalysisProgress(prev => ({ ...prev, processed: prev.processed + 1 }));
         }
     }, [applyFilterRules]);
 
     const handleLoadPhotos = useCallback(async () => {
-        if (!directoryPath) {
-            setStatusMessage('Please provide a directory path first.');
+        if (!isApiSupported) {
+            console.warn("Attempted to load photos, but the File System Access API is not supported.");
             return;
         }
-        setIsLoading(true);
-        setStatusMessage('Connecting and checking directory...');
-
         try {
-            const { count } = await api.checkPhotoDirectory(directoryPath);
-            if (count === 0) {
+            const handle = await window.showDirectoryPicker();
+            directoryHandleRef.current = handle;
+
+            setIsLoading(true);
+            setStatusMessage('Scanning directory...');
+            setPhotos(new Map());
+
+            const filesToProcess: {path: string, handle: FileSystemFileHandle}[] = [];
+
+            async function getFilesRecursively(dirHandle: FileSystemDirectoryHandle, path: string) {
+                for await (const entry of dirHandle.values()) {
+                    const newPath = path ? `${path}/${entry.name}` : entry.name;
+                    if (entry.kind === 'file' && entry.name.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
+                        filesToProcess.push({path: newPath, handle: entry});
+                    } else if (entry.kind === 'directory') {
+                        await getFilesRecursively(entry, newPath);
+                    }
+                }
+            }
+            await getFilesRecursively(handle, '');
+
+            if (filesToProcess.length === 0) {
                 setStatusMessage('No photos found in this directory. Try another one!');
                 setIsLoading(false);
                 return;
             }
 
-            let loadedCount = 0;
-            setPhotos(new Map()); // Clear previous photos
-            setStatusMessage(`Found ${count} photos. Starting stream...`);
+            setStatusMessage(`Found ${filesToProcess.length} photos. Loading previews...`);
+            setAnalysisProgress({ processed: 0, total: filesToProcess.length });
 
-            const onPhotoReceived = (data: { path: string; binary: string }) => {
-                loadedCount++;
-
-                if (streamTimeoutRef.current) clearTimeout(streamTimeoutRef.current);
-                streamTimeoutRef.current = setTimeout(() => {
-                    setStatusMessage(`Analysis complete! ${photosRef.current.size} photos ready. ✅`);
-                    setIsLoading(false);
-                }, 3000);
-
-                setStatusMessage(`Loading & Analyzing... (${loadedCount}/${count})`);
-
-                const objectURL = URL.createObjectURL(api.base64ToBlob(data.binary));
-                const newPhoto: Photo = {
-                    id: data.path,
-                    binary: data.binary,
+            const tempPhotosMap = new Map<string, Photo>();
+            for(const {path, handle} of filesToProcess) {
+                const file = await handle.getFile();
+                const objectURL = URL.createObjectURL(file);
+                tempPhotosMap.set(path, {
+                    id: path,
+                    binary: '', // Will be loaded on demand for analysis
                     objectURL,
                     status: PhotoStatus.QUEUED,
                     predictions: [],
                     selected: false,
+                });
+            }
+            setPhotos(tempPhotosMap); // Add all photos at once for initial render
+
+            // Start analysis asynchronously
+            for(const {path, handle} of filesToProcess) {
+                const file = await handle.getFile();
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const base64 = (reader.result as string).split(',')[1];
+                    analyzePhoto(path, base64);
                 };
-
-                setPhotos(prev => new Map(prev).set(data.path, newPhoto));
-                analyzePhoto(data.path, data.binary);
-            };
-
-            api.streamPhotos(
-                directoryPath,
-                onPhotoReceived,
-                (error) => {
-                    console.error('Socket error:', error);
-                    setStatusMessage(`Error during stream: ${error.message}`);
-                    setIsLoading(false);
-                },
-                () => setStatusMessage('Connected to backend, waiting for photos...'),
-            );
+                reader.readAsDataURL(file);
+            }
 
         } catch (error) {
-            setStatusMessage((error as Error).message);
+            if ((error as DOMException).name === 'AbortError') {
+                setStatusMessage('Directory selection cancelled.');
+            } else {
+                console.error('Error loading directory:', error);
+                setStatusMessage('Could not load directory. Check console for details.');
+            }
             setIsLoading(false);
         }
-    }, [directoryPath, analyzePhoto]);
+    }, [analyzePhoto, isApiSupported]);
 
     const handleSelectPhoto = useCallback((id: string) => {
         setPhotos(prev => {
@@ -133,25 +186,36 @@ export const usePhotoManager = (userProfile: UserProfile) => {
 
     const selectedPhotos = useMemo(() => Array.from(photos.values()).filter(p => p.selected), [photos]);
 
-    const handleDeleteSelected = async () => {
-        if (selectedPhotos.length === 0) return;
+    const handleDeleteSelected = useCallback(async () => {
+        if (selectedPhotos.length === 0 || !directoryHandleRef.current) return;
         const photosToDelete = [...selectedPhotos];
 
-        setStatusMessage(`Deleting ${photosToDelete.length} photos...`);
-        setPhotos(prev => {
-            const newPhotos = new Map(prev);
-            photosToDelete.forEach(p => newPhotos.delete(p.id));
-            return newPhotos;
-        });
+        const confirmation = window.confirm(`Are you sure you want to permanently delete ${photosToDelete.length} photo(s)? This action cannot be undone.`);
+        if (!confirmation) return;
 
-        try {
-            await Promise.all(photosToDelete.map(p => api.deletePhoto(p.id)));
-            setStatusMessage(`Successfully deleted ${photosToDelete.length} photos. ✅`);
-        } catch(error) {
-            console.error(error);
-            setStatusMessage(`Error deleting some photos. Please check console.`);
+        setStatusMessage(`Deleting ${photosToDelete.length} photos...`);
+
+        // Optimistically remove from UI
+        const newPhotos = new Map(photosRef.current);
+        photosToDelete.forEach(p => newPhotos.delete(p.id));
+        setPhotos(newPhotos);
+
+        let deletedCount = 0;
+        await Promise.all(photosToDelete.map(async (p) => {
+            const success = await deleteFileByPath(directoryHandleRef.current!, p.id);
+            if (success) {
+                URL.revokeObjectURL(p.objectURL); // Clean up blob URL
+                deletedCount++;
+            }
+        }));
+
+        if (deletedCount === photosToDelete.length) {
+            setStatusMessage(`Successfully deleted ${deletedCount} photos. ✅`);
+        } else {
+            setStatusMessage(`Deleted ${deletedCount} of ${photosToDelete.length} photos. Some deletions failed.`);
+            // Potentially add back photos that failed to delete, or prompt user to reload.
         }
-    };
+    }, [selectedPhotos, setPhotos, setStatusMessage]);
 
     const handleApplyRulesManually = useCallback(() => {
         const photosToProcess = Array.from(photosRef.current.values()).filter(p => p.status === PhotoStatus.ANALYZED);
@@ -241,10 +305,9 @@ export const usePhotoManager = (userProfile: UserProfile) => {
 
     return {
         photos,
-        directoryPath,
-        setDirectoryPath,
         statusMessage,
         isLoading,
+        isApiSupported,
         handleLoadPhotos,
         handleSelectPhoto,
         selectedPhotos,
