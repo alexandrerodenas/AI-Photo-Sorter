@@ -1,7 +1,7 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import type { UserProfile } from '../types';
-import { Trash2, PlusCircle, Save } from 'lucide-react';
+import { Trash2, PlusCircle, Save, Upload, Download } from 'lucide-react';
 
 interface ProfileEditorProps {
   currentProfile: UserProfile;
@@ -9,9 +9,10 @@ interface ProfileEditorProps {
   closeModal: () => void;
 }
 
-const ProfileEditor: React.FC<ProfileEditorProps> = ({ currentProfile, onSave, closeModal }) => {
+export const ProfileEditor: React.FC<ProfileEditorProps> = ({ currentProfile, onSave, closeModal }) => {
   const [profile, setProfile] = useState<UserProfile>(JSON.parse(JSON.stringify(currentProfile)));
   const [newRule, setNewRule] = useState({ label: '', confidence: 75 });
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSave = () => {
     onSave(profile);
@@ -31,8 +32,72 @@ const ProfileEditor: React.FC<ProfileEditorProps> = ({ currentProfile, onSave, c
     setProfile(p => ({...p, rules: p.rules.filter(rule => rule.id !== id)}));
   };
 
+  const handleExportProfile = () => {
+    try {
+      const profileJson = JSON.stringify(profile, null, 2);
+      const blob = new Blob([profileJson], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `photo_sorter_profile_${profile.firstName.toLowerCase().replace(/\s/g, '_')}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Failed to export profile:", error);
+      alert("An error occurred while exporting your profile.");
+    }
+  };
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const text = e.target?.result;
+        if (typeof text !== 'string') {
+          throw new Error("Failed to read file content.");
+        }
+        const importedProfile = JSON.parse(text);
+
+        // Basic validation
+        if (typeof importedProfile.firstName === 'string' && Array.isArray(importedProfile.rules) && typeof importedProfile.autoApplyRules === 'boolean') {
+          setProfile(importedProfile);
+          alert("Profile imported successfully! Review the changes and click 'Save Changes' to apply them.");
+        } else {
+          throw new Error("Invalid profile file format.");
+        }
+      } catch (error) {
+        console.error("Failed to import profile:", error);
+        alert("Failed to import profile. Please make sure it's a valid JSON file exported from this application.");
+      }
+    };
+    reader.onerror = () => {
+      alert("Error reading file.");
+    };
+    reader.readAsText(file);
+
+    // Reset the input value to allow re-importing the same file
+    if(event.target) event.target.value = '';
+  };
+
+
   return (
       <div className="space-y-6">
+        <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            accept=".json"
+            className="hidden"
+        />
         <div>
           <label className="block font-semibold mb-1">First Name</label>
           <input type="text" value={profile.firstName} onChange={e => setProfile({...profile, firstName: e.target.value})} className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-primary"/>
@@ -80,14 +145,22 @@ const ProfileEditor: React.FC<ProfileEditorProps> = ({ currentProfile, onSave, c
           </button>
         </div>
 
-        <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-          <button onClick={closeModal} className="px-4 py-2 bg-gray-200 dark:bg-gray-600 font-semibold rounded-md hover:bg-gray-300 dark:hover:bg-gray-500 transition">Cancel</button>
-          <button onClick={handleSave} className="flex items-center gap-2 px-4 py-2 bg-primary text-white font-semibold rounded-md hover:bg-primary-dark transition">
-            <Save className="w-5 h-5"/> Save Changes
-          </button>
+        <div className="flex justify-between items-center gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex gap-2">
+            <button onClick={handleImportClick} className="flex items-center gap-2 px-3 py-2 text-sm bg-gray-200 dark:bg-gray-700 font-semibold rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition">
+              <Upload className="w-4 h-4"/> Import
+            </button>
+            <button onClick={handleExportProfile} className="flex items-center gap-2 px-3 py-2 text-sm bg-gray-200 dark:bg-gray-700 font-semibold rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition">
+              <Download className="w-4 h-4"/> Export
+            </button>
+          </div>
+          <div className="flex gap-3">
+            <button onClick={closeModal} className="px-4 py-2 bg-gray-200 dark:bg-gray-600 font-semibold rounded-md hover:bg-gray-300 dark:hover:bg-gray-500 transition">Cancel</button>
+            <button onClick={handleSave} className="flex items-center gap-2 px-4 py-2 bg-primary text-white font-semibold rounded-md hover:bg-primary-dark transition">
+              <Save className="w-5 h-5"/> Save Changes
+            </button>
+          </div>
         </div>
       </div>
   );
 };
-
-export default ProfileEditor;

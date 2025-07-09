@@ -4,7 +4,7 @@ import type { UserProfile, Photo } from '../types';
 import { PhotoStatus } from '../types';
 import { usePhotoManager } from '../hooks/usePhotoManager';
 import PhotoCard from './PhotoCard';
-import ProfileEditor from './ProfileEditor';
+import { ProfileEditor } from './ProfileEditor';
 import { Spinner } from './ui';
 import {
   FolderOpen,

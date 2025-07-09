@@ -1,3 +1,4 @@
+
 # AI Photo Sorter
 
 An intelligent web application designed to automatically sort and manage your photos using AI-powered analysis. Load photos from a local directory, view AI-generated predictions, and apply custom rules to keep your collection effortlessly organized.
@@ -12,6 +13,7 @@ An intelligent web application designed to automatically sort and manage your ph
 -   **Bulk Actions**:
    -   **Select All / Clear All**: Quickly select or deselect all analyzed photos.
    -   **Delete Selected**: Permanently delete selected photos from your file system after review.
+-   **Import/Export Profiles**: Save your complete user profile (name and all custom rules) to a JSON file. This is great for backing up your settings or transferring them to another browser or machine.
 -   **Detailed Photo Viewer**: Double-click any photo to open a detailed view with a larger image and a complete list of its AI predictions.
 -   **Persistent User Profiles**: Your name and custom rules are saved in your browser's local storage for a personalized experience every time you visit.
 -   **Modern & Responsive UI**: Built with React and Tailwind CSS, the interface is clean, intuitive, and works beautifully across different screen sizes.
@@ -36,6 +38,8 @@ An intelligent web application designed to automatically sort and manage your ph
       -   Toggle whether rules are applied automatically on load.
       -   **Add new rules** by specifying a label (e.g., "dog", "car") and a minimum confidence level.
       -   **Delete** existing rules.
+      -   **Export Profile**: Click the `Export` button to save your current name and rules to a `.json` file on your computer. This is useful for backups or sharing your configuration.
+      -   **Import Profile**: Click the `Import` button to load a profile from a `.json` file. The imported settings will populate the editor, and you can save them to apply them to your workspace.
 
 5.  **Apply Actions**:
    -   **Apply Manual Rules**: Click this to select all photos that match your currently defined rules without deselecting any photos you've manually selected.
