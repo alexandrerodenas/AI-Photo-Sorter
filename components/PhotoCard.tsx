@@ -1,7 +1,7 @@
 import React, { useRef, useEffect } from 'react';
-import type { Photo } from '../types';
-import { PhotoStatus } from '../types';
-import { StatusPill } from './ui';
+import type { Photo } from '../types.ts';
+import { PhotoStatus } from '../types.ts';
+import { StatusPill } from './ui.tsx';
 import { Check, Tag } from 'lucide-react';
 
 interface PhotoCardProps {

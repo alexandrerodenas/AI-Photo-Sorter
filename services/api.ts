@@ -1,46 +1,56 @@
-
-import type { Prediction } from '../types';
-import * as cocoSsd from '@tensorflow-models/coco-ssd';
-import '@tensorflow/tfjs'; // Necessary to initialize the backend
+import type { Prediction } from '../types.ts';
+import * as tf from '@tensorflow/tfjs';
+// By importing the backends, they are registered with tfjs, making tf.setBackend available.
+import '@tensorflow/tfjs-backend-webgl';
+import '@tensorflow/tfjs-backend-wasm';
+import * as mobilenet from '@tensorflow-models/mobilenet';
 
 // A singleton promise to ensure the model is loaded only once.
-let modelPromise: Promise<cocoSsd.ObjectDetection> | null = null;
+let modelPromise: Promise<mobilenet.MobileNet> | null = null;
 
-const getModel = (): Promise<cocoSsd.ObjectDetection> => {
+const getModel = () => {
   if (!modelPromise) {
-    // Load the COCO-SSD model.
-    modelPromise = cocoSsd.load();
+    // We create an async block to correctly initialize the model.
+    // This ensures that we first set the backend and then load the model, avoiding race conditions.
+    modelPromise = (async () => {
+      try {
+        await tf.setBackend('wasm');
+        console.log('Using WASM backend for TensorFlow.js');
+      } catch (e) {
+        console.log('WASM backend not available, falling back to WebGL.');
+        await tf.setBackend('webgl');
+      }
+      return mobilenet.load();
+    })();
   }
   return modelPromise;
 };
 
-// This function now runs the object detection model directly in the browser.
-export const detectObjects = async (base64Image: string): Promise<Prediction[]> => {
+// Helper function to create an Image element from a data URL
+const createImageElement = (dataUrl: string): Promise<HTMLImageElement> => {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = (err) => reject(err);
+        img.src = dataUrl;
+    });
+};
+
+// This function now runs image classification using TensorFlow.js and MobileNet
+export const classifyImage = async (dataUrl: string): Promise<Prediction[]> => {
   const model = await getModel();
+  const imageElement = await createImageElement(dataUrl);
 
-  // Create an Image element from the base64 string
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.src = `data:image/jpeg;base64,${base64Image}`;
-
-    img.onload = async () => {
-      try {
-        const predictions = await model.detect(img);
-        // Map the model's output to the application's Prediction type
-        resolve(predictions.map(p => ({
-          label: p.class,
-          score: p.score,
-        })));
-      } catch (error) {
-        console.error('Error during object detection:', error);
-        reject(error);
-      }
-    };
-
-    img.onerror = () => {
-      const errorMessage = 'Failed to load image for detection.';
-      console.error(errorMessage);
-      reject(new Error(errorMessage));
-    };
-  });
+  try {
+    const tfPredictions = await model.classify(imageElement);
+    // The output format is { className: string, probability: number }
+    // We need to map it to our Prediction type: { label: string, score: number }
+    return tfPredictions.map(p => ({
+      label: p.className.split(', ')[0], // Get the primary label
+      score: p.probability,
+    }));
+  } catch (error) {
+    console.error('Error during image classification:', error);
+    throw error; // Re-throw to be caught by the caller
+  }
 };

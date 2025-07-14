@@ -1,6 +1,6 @@
 
 import React, { useState, useRef } from 'react';
-import type { UserProfile } from '../types';
+import type { UserProfile } from '../types.ts';
 import { Trash2, PlusCircle, Save, Upload, Download } from 'lucide-react';
 
 interface ProfileEditorProps {
