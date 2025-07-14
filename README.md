@@ -44,3 +44,9 @@ This application uses the modern **File System Access API** (`window.showDirecto
     -   Safari (all versions)
 
 If you open this application in an unsupported browser, the "Select Directory" feature will be disabled, and a message will inform you of the incompatibility. For the best experience, please use a recent version of Chrome or Edge.
+
+## Todo
+* Create a landing page
+* New view per labels
+* Drag'n drop feature to easly load a folder
+* Handle multiple profile
