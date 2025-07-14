@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { PhotoStatus } from '../types';
+import { PhotoStatus } from '../types.ts';
 import { Loader, Check, AlertCircle } from 'lucide-react';
 
 export const Spinner: React.FC<{ className?: string }> = ({ className = "w-6 h-6" }) => (
