@@ -1,10 +1,10 @@
 import React, { useState, useMemo } from 'react';
-import type { UserProfile, Photo } from '../types';
-import { PhotoStatus } from '../types';
-import { usePhotoManager } from '../hooks/usePhotoManager';
-import PhotoCard from './PhotoCard';
-import { ProfileEditor } from './ProfileEditor';
-import { Spinner } from './ui';
+import type { UserProfile, Photo } from '../types.ts';
+import { PhotoStatus } from '../types.ts';
+import { usePhotoManager } from '../hooks/usePhotoManager.ts';
+import PhotoCard from './PhotoCard.tsx';
+import { ProfileEditor } from './ProfileEditor.tsx';
+import { Spinner } from './ui.tsx';
 import {
   FolderOpen,
   Trash2,

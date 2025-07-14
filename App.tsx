@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import type { UserProfile } from './types';
+import type { UserProfile } from './types.ts';
 import PhotoSorter from './components/PhotoSorter';
 import Onboarding from './components/Onboarding';
 import { storageService } from './services/storage';

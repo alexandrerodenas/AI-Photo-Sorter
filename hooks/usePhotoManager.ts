@@ -1,4 +1,3 @@
-
 // --- File System Access API type definitions for browser compatibility ---
 // This ensures TypeScript can compile features that are present in modern browsers
 // but may not be in the default TypeScript library definitions.
@@ -35,9 +34,9 @@ declare global {
 // --- End of File System Access API type definitions ---
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import type { UserProfile, Photo, FilterRule } from '../types';
-import { PhotoStatus } from '../types';
-import * as api from '../services/api';
+import type { UserProfile, Photo, FilterRule } from '../types.ts';
+import { PhotoStatus } from '../types.ts';
+import * as api from '../services/api.ts';
 
 // Helper to recursively delete a file by its relative path from a directory handle
 async function deleteFileByPath(dirHandle: FileSystemDirectoryHandle, path: string): Promise<boolean> {
@@ -109,10 +108,10 @@ export const usePhotoManager = (userProfile: UserProfile) => {
         return false;
     }, []);
 
-    const analyzePhoto = useCallback(async (photoId: string, base64: string) => {
+    const analyzePhoto = useCallback(async (photoId: string, dataUrl: string) => {
         setPhotos(prev => new Map(prev).set(photoId, { ...prev.get(photoId)!, status: PhotoStatus.ANALYZING }));
         try {
-            const predictions = await api.detectObjects(base64);
+            const predictions = await api.classifyImage(dataUrl);
             setPhotos(prev => {
                 const newPhotos = new Map(prev);
                 const currentPhoto = newPhotos.get(photoId);
@@ -193,8 +192,8 @@ export const usePhotoManager = (userProfile: UserProfile) => {
                 const file = await handle.getFile();
                 const reader = new FileReader();
                 reader.onload = () => {
-                    const base64 = (reader.result as string).split(',')[1];
-                    analyzePhoto(path, base64);
+                    const dataUrl = reader.result as string;
+                    analyzePhoto(path, dataUrl);
                 };
                 reader.readAsDataURL(file);
             }
