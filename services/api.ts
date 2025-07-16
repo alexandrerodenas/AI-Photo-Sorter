@@ -3,6 +3,10 @@ import type { MobileNet } from '@tensorflow-models/mobilenet';
 
 // A singleton promise to ensure the model is loaded only once.
 let modelPromise: Promise<MobileNet> | null = null;
+let backendName: string | null = null;
+
+// Exported function to get the backend name after it's been initialized.
+export const getTfBackend = (): string | null => backendName;
 
 const getModel = () => {
   if (!modelPromise) {
@@ -27,8 +31,10 @@ const getModel = () => {
 
       // Wait for the backend to be fully initialized.
       await tf.ready();
+      // Capture the backend name so it can be displayed in the UI.
+      backendName = tf.getBackend()?.toUpperCase();
 
-      console.log('TensorFlow.js backend ready. Loading MobileNet model...');
+      console.log(`TensorFlow.js backend ready (${backendName}). Loading MobileNet model...`);
       const model = await mobilenet.load();
       console.log('MobileNet model loaded successfully.');
       return model;

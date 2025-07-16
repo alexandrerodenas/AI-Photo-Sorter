@@ -27,6 +27,7 @@ const PhotoSorter: React.FC<PhotoSorterProps> = ({ userProfile, onProfileUpdate 
     handleApplyRulesManually,
     handleSelectAll,
     handleClearSelection,
+    tfBackend,
   } = usePhotoManager(userProfile);
 
   const [filterLabel, setFilterLabel] = useState<string>('');
@@ -55,6 +56,7 @@ const PhotoSorter: React.FC<PhotoSorterProps> = ({ userProfile, onProfileUpdate 
             totalPhotoCount={photos.size}
             statusMessage={statusMessage}
             noAnalyzedPhotos={noAnalyzedPhotos}
+            tfBackend={tfBackend}
         />
 
         <PhotoContent

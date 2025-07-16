@@ -65,6 +65,7 @@ export const usePhotoManager = (userProfile: UserProfile) => {
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [analysisProgress, setAnalysisProgress] = useState({ processed: 0, total: 0 });
     const [isApiSupported, setIsApiSupported] = useState(true);
+    const [tfBackend, setTfBackend] = useState<string | null>(null);
 
     const directoryHandleRef = useRef<FileSystemDirectoryHandle | null>(null);
     const photosRef = useRef(photos);
@@ -112,6 +113,12 @@ export const usePhotoManager = (userProfile: UserProfile) => {
         setPhotos(prev => new Map(prev).set(photoId, { ...prev.get(photoId)!, status: PhotoStatus.ANALYZING }));
         try {
             const predictions = await api.classifyImage(dataUrl);
+
+            // After the first successful analysis, get the backend name to display in the UI.
+            if (!tfBackend) {
+                setTfBackend(api.getTfBackend());
+            }
+
             setPhotos(prev => {
                 const newPhotos = new Map(prev);
                 const currentPhoto = newPhotos.get(photoId);
@@ -134,7 +141,7 @@ export const usePhotoManager = (userProfile: UserProfile) => {
         } finally {
             setAnalysisProgress(prev => ({ ...prev, processed: prev.processed + 1 }));
         }
-    }, [applyFilterRules]);
+    }, [applyFilterRules, tfBackend]);
 
     const handleLoadPhotos = useCallback(async () => {
         if (!isApiSupported) {
@@ -351,5 +358,6 @@ export const usePhotoManager = (userProfile: UserProfile) => {
         handleApplyRulesManually,
         handleSelectAll,
         handleClearSelection,
+        tfBackend,
     };
 };

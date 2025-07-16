@@ -31,6 +31,7 @@ interface PhotoSorterSidebarProps {
   totalPhotoCount: number;
   statusMessage: string;
   noAnalyzedPhotos: boolean;
+  tfBackend: string | null;
 }
 
 const PhotoSorterSidebar: React.FC<PhotoSorterSidebarProps> = ({
@@ -48,7 +49,8 @@ const PhotoSorterSidebar: React.FC<PhotoSorterSidebarProps> = ({
                                                                  selectedPhotoCount,
                                                                  totalPhotoCount,
                                                                  statusMessage,
-                                                                 noAnalyzedPhotos
+                                                                 noAnalyzedPhotos,
+                                                                 tfBackend
                                                                }) => {
   return (
       <aside className="w-80 bg-white dark:bg-gray-800 p-6 flex flex-col shadow-lg shrink-0">
@@ -136,8 +138,13 @@ const PhotoSorterSidebar: React.FC<PhotoSorterSidebarProps> = ({
             <span>Selected</span>
             <span className="px-2 py-0.5 bg-accent/20 text-accent rounded-full">{selectedPhotoCount}</span>
           </div>
-          <div className="mt-4 text-xs text-gray-500 dark:text-gray-400 p-2 bg-gray-100 dark:bg-gray-700/50 rounded-md text-center">
+          <div className="mt-4 text-xs text-gray-500 dark:text-gray-400 p-2 bg-gray-100 dark:bg-gray-700/50 rounded-md text-center space-y-1">
             <p>{statusMessage}</p>
+            {tfBackend && (
+                <p className="font-mono text-gray-400 dark:text-gray-500 text-[10px] tracking-wider pt-1 border-t border-gray-200 dark:border-gray-600/50 mt-1">
+                  AI Backend: {tfBackend}
+                </p>
+            )}
           </div>
         </div>
       </aside>
