@@ -6,48 +6,50 @@
     <title>AI Photo Sorter</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-      tailwind.config = {
-        darkMode: 'class',
-        theme: {
-          extend: {
-            colors: {
-              primary: {
-                DEFAULT: 'hsl(190, 80%, 45%)',
-                light: 'hsl(190, 80%, 60%)',
-                dark: 'hsl(190, 80%, 35%)',
-              },
-              secondary: {
-                DEFAULT: 'hsl(38, 92%, 50%)',
-                light: 'hsl(38, 92%, 65%)',
-                dark: 'hsl(38, 92%, 40%)',
-              },
-              accent: {
-                DEFAULT: 'hsl(210, 90%, 55%)',
-                light: 'hsl(210, 90%, 65%)',
-                dark: 'hsl(210, 90%, 45%)',
-              },
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            DEFAULT: 'hsl(190, 80%, 45%)',
+                            light: 'hsl(190, 80%, 60%)',
+                            dark: 'hsl(190, 80%, 35%)',
+                        },
+                        secondary: {
+                            DEFAULT: 'hsl(38, 92%, 50%)',
+                            light: 'hsl(38, 92%, 65%)',
+                            dark: 'hsl(38, 92%, 40%)',
+                        },
+                        accent: {
+                            DEFAULT: 'hsl(210, 90%, 55%)',
+                            light: 'hsl(210, 90%, 65%)',
+                            dark: 'hsl(210, 90%, 45%)',
+                        },
+                    },
+                },
             },
-          },
-        },
-      }
+        }
     </script>
-<script type="importmap">
-{
-  "imports": {
-    "react-dom/": "https://esm.sh/react-dom@^19.1.0/",
-    "react/": "https://esm.sh/react@^19.1.0/",
-    "react": "https://esm.sh/react@^19.1.0",
-    "lucide-react": "https://esm.sh/lucide-react@^0.525.0",
-    "@tensorflow/tfjs": "https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.es2017.mjs",
-    "@tensorflow-models/mobilenet": "https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@3.0.1/dist/mobilenet.es2017.mjs",
-    "@tensorflow/tfjs-backend-wasm": "https://esm.sh/@tensorflow/tfjs-backend-wasm@^4.22.0",
-    "@tensorflow/tfjs-backend-webgl": "https://esm.sh/@tensorflow/tfjs-backend-webgl@^4.22.0"
-  }
-}
-</script>
+    <script type="importmap">
+        {
+          "imports": {
+            "react-dom/": "https://esm.sh/react-dom@19.0.0-rc.0/",
+            "react/": "https://esm.sh/react@19.0.0-rc.0/",
+            "react": "https://esm.sh/react@19.0.0-rc.0",
+            "lucide-react": "https://esm.sh/lucide-react@^0.525.0",
+            "@tensorflow/tfjs": "https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.es2017.mjs",
+            "@tensorflow-models/mobilenet": "https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@4.0.0/dist/mobilenet.es2017.mjs",
+            "@tensorflow/tfjs-backend-webgpu": "https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgpu@4.22.0/dist/tf-backend-webgpu.es2017.mjs",
+            "@tensorflow/tfjs-backend-wasm": "https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-wasm@4.22.0/dist/tf-backend-wasm.es2017.mjs",
+            "@tensorflow/tfjs-backend-webgl": "https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl@4.22.0/dist/tf-backend-webgl.es2017.mjs",
+            "@google/genai": "https://esm.sh/@google/genai@^1.9.0"
+          }
+        }
+    </script>
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 antialiased">
-    <div id="root"></div>
+<div id="root"></div>
 <script type="module" src="/index.tsx"></script>
 </body>
 </html>

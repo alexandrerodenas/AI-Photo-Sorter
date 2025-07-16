@@ -17,16 +17,23 @@ const getModel = () => {
       console.log('Dynamically loading TensorFlow.js and MobileNet...');
       const tf = await import('@tensorflow/tfjs');
       // Dynamically import backends to register them
+      await import('@tensorflow/tfjs-backend-webgpu');
       await import('@tensorflow/tfjs-backend-wasm');
       await import('@tensorflow/tfjs-backend-webgl');
       const mobilenet = await import('@tensorflow-models/mobilenet');
 
       try {
-        await tf.setBackend('wasm');
-        console.log('Using WASM backend for TensorFlow.js');
+        await tf.setBackend('webgpu');
+        console.log('Using WebGPU backend for TensorFlow.js');
       } catch (e) {
-        console.warn('WASM backend not available, falling back to WebGL.', e);
-        await tf.setBackend('webgl');
+        console.warn('WebGPU backend not available, falling back to WASM.', e);
+        try {
+          await tf.setBackend('wasm');
+          console.log('Using WASM backend for TensorFlow.js');
+        } catch (e2) {
+          console.warn('WASM backend not available, falling back to WebGL.', e2);
+          await tf.setBackend('webgl');
+        }
       }
 
       // Wait for the backend to be fully initialized.
