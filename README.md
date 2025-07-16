@@ -1,54 +1,65 @@
 # AI Photo Sorter
 
-An intelligent web application to automatically sort and manage your photos using AI-powered semantic search and auto-tagging. Describe the photos you're looking for, or browse by AI-generated categories.
+A privacy-first, in-browser application to automatically sort and manage your local photo library using on-device AI.
 
-## ✨ Features
+![AI Photo Sorter Screenshot](https://storage.googleapis.com/project-screenshots/ai-photo-sorter-screenshot.png) *(This is a placeholder screenshot URL)*
 
--   **Local Directory Loading**: Securely load photos directly from your computer's file system. No uploads required!
--   **Client-Side Semantic Search**: Use natural language to find your photos. Search for "a dog playing on the beach" or "sunsets over mountains" and a local AI model will find matching images.
--   **AI Auto-Tagging**: Photos are automatically analyzed and tagged with relevant keywords (e.g., "Nature", "Sunset", "Animals") using MobileNet.
--   **Dual View Modes**:
-    -   **Grid View**: A classic, responsive photo gallery.
-    -   **Folder View**: Browse your photos in an organized structure, grouped first by analysis status and then by their AI-generated tags.
--   **Interactive Photo Gallery**: View, select, and manage your photos in a responsive and intuitive grid that shows search results ranked by relevance.
--   **Photo Viewer**: Double-click a photo to see a larger view.
--   **Bulk Deletion**: Select multiple photos and permanently delete them from your local disk.
--   **Profile Management**: Save your preferences in a user profile that can be exported and imported.
+---
 
-## 🧠 How It Works
+## ✨ Core Features
 
-This application leverages a hybrid AI approach for powerful and private photo management:
+-   **100% Private & Secure**: Your photos are processed entirely on your device. Nothing is ever uploaded to a server, ensuring complete privacy.
+-   **AI-Powered Tagging**: Leverages a built-in TensorFlow.js model (MobileNet) to scan, classify, and tag your photos based on their content.
+-   **Direct File System Access**: Select a folder on your computer and manage your photos directly. The app can delete files with your permission.
+-   **Powerful Rule Engine**: Create custom rules to automatically select photos that match specific labels and confidence levels (e.g., "select all photos with 'cat' at >80% confidence").
+-   **Flexible Views**: Switch between a classic grid layout and a hierarchical folder view that groups photos by status and AI-detected labels.
+-   **Profile Management**: Save your settings and rules into a profile that can be exported and imported as a simple JSON file.
+-   **No Backend Required**: Runs entirely in the browser, making it portable and easy to use anywhere.
 
--   **On-Device AI for Search**: It uses **`@xenova/transformers.js`** to run a state-of-the-art multi-modal model (**CLIP**) directly in your web browser for semantic search. This part of the processing is 100% client-side and can work offline after initial load.
--   **Cloud AI for Categorization**: To automatically generate descriptive tags for your photos. This requires an internet connection and a valid API key.
+---
 
-## 🔒 Privacy & Data Usage
+## 🚀 How It Works
 
--   **Semantic Search**: Performed entirely on your device. Your photos are **never** sent to a server for search-related tasks.
--   **Auto-Tagging**: To generate tags, images are sent to MobileNet. According to Google's policies, data is not stored or used for model training. However, be aware that this feature involves sending your photo data to a cloud service.
+This application is a modern single-page application built with the following technologies:
 
-## 🚀 Getting Started
+-   **Frontend**: **React** (with Hooks), **TypeScript**, and **Tailwind CSS** for a responsive and maintainable user interface.
+-   **AI Engine**: **TensorFlow.js** with the **MobileNet** model for efficient, in-browser image classification. The WASM backend is preferred for performance.
+-   **File System**: The modern **File System Access API** allows the browser to securely interact with your local files and folders *after you grant permission*.
 
-1.  **API Key Setup**: This application requires a Google Gemini API key. You must set it as an environment variable named `API_KEY`.
-2.  Open the `index.html` file in your browser.
-3.  You'll be prompted to enter your name to create a user profile.
-4.  Click the "Select Directory" button.
-5.  Choose a folder on your computer that contains photos.
-6.  The application will begin scanning and analyzing your images. This requires an internet connection and may take a moment.
-7.  Use the search bar for semantic search, or switch to the Folder View to browse by AI-generated categories.
+---
+
+## 🖥️ Getting Started
+
+1.  **Open the App**: Launch the application in a supported web browser (e.g., Google Chrome, Microsoft Edge).
+2.  **Create Profile**: On the landing page, enter your name to create a user profile. Default rules are added to get you started.
+3.  **Load Photos**: In the main view, click **"Select Directory"** in the sidebar and choose a folder containing your photos.
+4.  **AI Analysis**: The app will begin scanning and analyzing your photos. You can monitor the progress in the status bar.
+5.  **Organize**:
+    -   Use the **Grid View** for a quick overview or switch to the **Folder View** to see photos grouped by category.
+    -   Click on photos to select them or double-click to view them in a larger modal with detailed prediction scores.
+    -   Apply your custom rules or use the action buttons to select, clear, and delete photos.
+6.  **Customize**: Click the settings icon next to your name to open the profile editor, where you can add, remove, and modify your filter rules. You can also import/export your entire profile.
+
+---
 
 ## ⚠️ Browser Compatibility
 
-This application uses the modern **File System Access API** (`window.showDirectoryPicker`) to allow you to select and interact with local directories directly in the browser. This API provides enhanced security and performance.
+This application relies on the **File System Access API**. As of now, this API is primarily supported by Chromium-based browsers like:
 
-**As a result, full functionality is only available on browsers that support this API.**
+-   Google Chrome
+-   Microsoft Edge
+-   Opera
 
--   ✅ **Supported Browsers**:
-    -   Google Chrome (version 86+)
-    -   Microsoft Edge (version 86+)
+The app will show a warning if your browser is not supported.
 
--   ❌ **Unsupported Browsers**:
-    -   Firefox (all versions)
-    -   Safari (all versions)
+---
 
-If you open this application in an unsupported browser, the "Select Directory" feature will be disabled, and a message will inform you of the incompatibility. For the best experience, please use a recent version of Chrome or Edge.
+## 📂 Project Structure
+
+The codebase is organized for maintainability and scalability:
+
+-   `/components`: Contains all reusable React components, broken down by feature (e.g., `PhotoCard`, `PhotoSorterSidebar`, `FolderView`).
+-   `/hooks`: Houses custom React hooks, such as `usePhotoManager`, which encapsulates the core business logic for photo management and analysis.
+-   `/services`: Includes modules for external interactions, such as `api.ts` (TensorFlow.js model interaction) and `storage.ts` (localStorage management).
+-   `/App.tsx`: The main application component that handles routing and state management.
+-   `/index.html`: The entry point of the application, which loads Tailwind CSS and sets up the import map for modules.
