@@ -6,7 +6,7 @@ An intelligent web application to automatically sort and manage your photos usin
 
 -   **Local Directory Loading**: Securely load photos directly from your computer's file system. No uploads required!
 -   **Client-Side Semantic Search**: Use natural language to find your photos. Search for "a dog playing on the beach" or "sunsets over mountains" and a local AI model will find matching images.
--   **AI Auto-Tagging**: Photos are automatically analyzed and tagged with relevant keywords (e.g., "Nature", "Sunset", "Animals") using the Google Gemini vision model.
+-   **AI Auto-Tagging**: Photos are automatically analyzed and tagged with relevant keywords (e.g., "Nature", "Sunset", "Animals") using MobileNet.
 -   **Dual View Modes**:
     -   **Grid View**: A classic, responsive photo gallery.
     -   **Folder View**: Browse your photos in an organized structure, grouped first by analysis status and then by their AI-generated tags.
@@ -20,12 +20,12 @@ An intelligent web application to automatically sort and manage your photos usin
 This application leverages a hybrid AI approach for powerful and private photo management:
 
 -   **On-Device AI for Search**: It uses **`@xenova/transformers.js`** to run a state-of-the-art multi-modal model (**CLIP**) directly in your web browser for semantic search. This part of the processing is 100% client-side and can work offline after initial load.
--   **Cloud AI for Categorization**: To automatically generate descriptive tags for your photos, the application sends them to the **Google Gemini API**. This requires an internet connection and a valid API key.
+-   **Cloud AI for Categorization**: To automatically generate descriptive tags for your photos. This requires an internet connection and a valid API key.
 
 ## 🔒 Privacy & Data Usage
 
 -   **Semantic Search**: Performed entirely on your device. Your photos are **never** sent to a server for search-related tasks.
--   **Auto-Tagging**: To generate tags, images are sent to the Google Gemini API. According to Google's policies, data is not stored or used for model training. However, be aware that this feature involves sending your photo data to a cloud service.
+-   **Auto-Tagging**: To generate tags, images are sent to MobileNet. According to Google's policies, data is not stored or used for model training. However, be aware that this feature involves sending your photo data to a cloud service.
 
 ## 🚀 Getting Started
 

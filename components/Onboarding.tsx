@@ -1,11 +1,21 @@
 
 import React, { useState } from 'react';
-import { UserProfile } from '../services/types.ts';
-import { Smile, Zap } from 'lucide-react';
+import type { UserProfile } from '../services/types.ts';
+import { Zap, Sparkles, Bot, ShieldCheck, SlidersHorizontal } from 'lucide-react';
 
 interface OnboardingProps {
   onProfileSave: (profile: UserProfile) => void;
 }
+
+const FeatureCard = ({ icon, title, children }: { icon: React.ReactNode, title: string, children: React.ReactNode }) => (
+    <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 flex flex-col items-center text-center">
+      <div className="mb-4 text-secondary">
+        {icon}
+      </div>
+      <h3 className="text-xl font-semibold mb-2 text-gray-800 dark:text-gray-100">{title}</h3>
+      <p className="text-gray-600 dark:text-gray-400">{children}</p>
+    </div>
+);
 
 const Onboarding: React.FC<OnboardingProps> = ({ onProfileSave }) => {
   const [firstName, setFirstName] = useState('');
@@ -26,32 +36,65 @@ const Onboarding: React.FC<OnboardingProps> = ({ onProfileSave }) => {
   };
 
   return (
-      <div className="flex items-center justify-center h-screen bg-gray-50 dark:bg-gray-900">
-        <div className="text-center p-8 max-w-md w-full">
-          <div className="flex justify-center items-center mb-6">
-            <h1 className="text-5xl font-bold text-primary dark:text-primary-light">Welcome!</h1>
-            <Smile className="w-14 h-14 ml-3 text-secondary" />
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 font-sans">
+        <main className="container mx-auto px-6 py-16 text-center">
+
+          {/* Hero Section */}
+          <div className="max-w-4xl mx-auto mb-16">
+            <div className="flex justify-center items-center mb-4">
+              <Sparkles className="w-16 h-16 text-primary" />
+            </div>
+            <h1 className="text-4xl md:text-6xl font-bold text-primary dark:text-primary-light mb-4 leading-tight">
+              AI-Powered Photo Sorting, Simplified.
+            </h1>
+            <p className="text-lg md:text-xl text-gray-600 dark:text-gray-300 mb-12">
+              Automatically categorize your local photos with powerful AI, right in your browser.
+              <br/>
+              No uploads, total privacy.
+            </p>
           </div>
-          <p className="text-lg text-gray-600 dark:text-gray-300 mb-8">
-            I'm here to help you sort your photos. What should I call you?
-          </p>
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <input
-                type="text"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                placeholder="Enter your first name..."
-                className="w-full px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none transition"
-                required
-            />
-            <button
-                type="submit"
-                className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary-dark text-white font-bold py-3 px-4 rounded-lg transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-light"
-            >
-              Let's Get Started <Zap className="w-5 h-5" />
-            </button>
-          </form>
-        </div>
+
+          {/* Features Section */}
+          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto mb-20">
+            <FeatureCard icon={<Bot className="w-10 h-10" />} title="Automatic Tagging">
+              Leverage state-of-the-art AI to scan and label your photos based on their content.
+            </FeatureCard>
+            <FeatureCard icon={<ShieldCheck className="w-10 h-10" />} title="100% Private">
+              Your photos are processed entirely on your device. Nothing is ever uploaded to a server.
+            </FeatureCard>
+            <FeatureCard icon={<SlidersHorizontal className="w-10 h-10" />} title="Powerful Rules">
+              Create custom rules to automatically select photos that match your criteria for easy organization.
+            </FeatureCard>
+          </div>
+
+          {/* Call to Action Section */}
+          <div className="max-w-md mx-auto bg-white dark:bg-gray-800/50 p-8 rounded-xl shadow-2xl ring-1 ring-primary/20">
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-4">Ready to Get Started?</h2>
+            <p className="text-gray-600 dark:text-gray-300 mb-6">
+              Let's begin by setting up your profile. What should I call you?
+            </p>
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+              <input
+                  type="text"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  placeholder="Enter your first name..."
+                  className="w-full px-4 py-3 bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none transition"
+                  required
+              />
+              <button
+                  type="submit"
+                  className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary-dark text-white font-bold py-3 px-4 rounded-lg transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-light"
+              >
+                Start Sorting <Zap className="w-5 h-5" />
+              </button>
+            </form>
+          </div>
+        </main>
+
+        <footer className="text-center py-8 text-sm text-gray-500">
+          <p>Powered by Alexandre Rodenas</p>
+        </footer>
       </div>
   );
 };
