@@ -34,8 +34,8 @@ declare global {
 // --- End of File System Access API type definitions ---
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import type { UserProfile, Photo, FilterRule } from '../types.ts';
-import { PhotoStatus } from '../types.ts';
+import type { UserProfile, Photo, FilterRule } from '../services/types.ts';
+import { PhotoStatus } from '../services/types.ts';
 import * as api from '../services/api.ts';
 
 // Helper to recursively delete a file by its relative path from a directory handle

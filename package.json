@@ -9,16 +9,18 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "react-dom": "^19.1.0",
-    "react": "^19.1.0",
-    "lucide-react": "^0.525.0",
-    "@tensorflow/tfjs": "4.20.0",
     "@tensorflow-models/mobilenet": "^2.1.1",
+    "@tensorflow/tfjs": "4.20.0",
     "@tensorflow/tfjs-backend-wasm": "^4.22.0",
-    "@tensorflow/tfjs-backend-webgl": "^4.22.0"
+    "@tensorflow/tfjs-backend-webgl": "^4.22.0",
+    "lucide-react": "^0.525.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
     "typescript": "~5.7.2",
     "vite": "^6.2.0"
   }

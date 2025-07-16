@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from 'react';
-import type { Photo } from '../types.ts';
-import { PhotoStatus } from '../types.ts';
+import type { Photo } from '../services/types.ts';
+import { PhotoStatus } from '../services/types.ts';
 import { StatusPill } from './ui.tsx';
 import { Check, Tag } from 'lucide-react';
 

@@ -1,5 +1,5 @@
 
-import type { UserProfile } from '../types.ts';
+import type { UserProfile } from './types.ts';
 
 const PROFILE_KEY = 'photoSorterUserProfile';
 

@@ -1,26 +1,37 @@
-import type { Prediction } from '../types.ts';
-import * as tf from '@tensorflow/tfjs';
-// By importing the backends, they are registered with tfjs, making tf.setBackend available.
-import '@tensorflow/tfjs-backend-webgl';
-import '@tensorflow/tfjs-backend-wasm';
-import * as mobilenet from '@tensorflow-models/mobilenet';
+import type { Prediction } from './types.ts';
+import type { MobileNet } from '@tensorflow-models/mobilenet';
 
 // A singleton promise to ensure the model is loaded only once.
-let modelPromise: Promise<mobilenet.MobileNet> | null = null;
+let modelPromise: Promise<MobileNet> | null = null;
 
 const getModel = () => {
   if (!modelPromise) {
-    // We create an async block to correctly initialize the model.
-    // This ensures that we first set the backend and then load the model, avoiding race conditions.
+    // We create an async block to dynamically import and initialize the model.
+    // This ensures TF.js and its modules are only loaded when needed,
+    // preventing load-time errors from crashing the entire app.
     modelPromise = (async () => {
+      console.log('Dynamically loading TensorFlow.js and MobileNet...');
+      const tf = await import('@tensorflow/tfjs');
+      // Dynamically import backends to register them
+      await import('@tensorflow/tfjs-backend-wasm');
+      await import('@tensorflow/tfjs-backend-webgl');
+      const mobilenet = await import('@tensorflow-models/mobilenet');
+
       try {
         await tf.setBackend('wasm');
         console.log('Using WASM backend for TensorFlow.js');
       } catch (e) {
-        console.log('WASM backend not available, falling back to WebGL.');
+        console.warn('WASM backend not available, falling back to WebGL.', e);
         await tf.setBackend('webgl');
       }
-      return mobilenet.load();
+
+      // Wait for the backend to be fully initialized.
+      await tf.ready();
+
+      console.log('TensorFlow.js backend ready. Loading MobileNet model...');
+      const model = await mobilenet.load();
+      console.log('MobileNet model loaded successfully.');
+      return model;
     })();
   }
   return modelPromise;
@@ -28,20 +39,19 @@ const getModel = () => {
 
 // Helper function to create an Image element from a data URL
 const createImageElement = (dataUrl: string): Promise<HTMLImageElement> => {
-    return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.onload = () => resolve(img);
-        img.onerror = (err) => reject(err);
-        img.src = dataUrl;
-    });
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = (err) => reject(err);
+    img.src = dataUrl;
+  });
 };
 
 // This function now runs image classification using TensorFlow.js and MobileNet
 export const classifyImage = async (dataUrl: string): Promise<Prediction[]> => {
-  const model = await getModel();
-  const imageElement = await createImageElement(dataUrl);
-
   try {
+    const model = await getModel();
+    const imageElement = await createImageElement(dataUrl);
     const tfPredictions = await model.classify(imageElement);
     // The output format is { className: string, probability: number }
     // We need to map it to our Prediction type: { label: string, score: number }

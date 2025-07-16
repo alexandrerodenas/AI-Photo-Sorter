@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { UserProfile } from '../types.ts';
+import { UserProfile } from '../services/types.ts';
 import { Smile, Zap } from 'lucide-react';
 
 interface OnboardingProps {
