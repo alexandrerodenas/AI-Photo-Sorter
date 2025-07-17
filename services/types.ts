@@ -4,6 +4,7 @@ export enum PhotoStatus {
   ANALYZING = 'ANALYZING',
   ANALYZED = 'ANALYZED',
   ERROR = 'ERROR',
+  UNCATEGORIZED = 'UNCATEGORIZED',
 }
 
 export interface Prediction {
@@ -30,4 +31,5 @@ export interface UserProfile {
   firstName: string;
   rules: FilterRule[];
   autoApplyRules: boolean;
+  unknownThreshold?: number; // 0-50, percentage for classifying photos as 'Uncategorized'
 }

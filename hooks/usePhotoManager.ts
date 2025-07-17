@@ -130,13 +130,21 @@ export const usePhotoManager = (userProfile: UserProfile) => {
                 setTfBackend(api.getTfBackend());
             }
 
+            const threshold = userProfileRef.current.unknownThreshold ?? 10;
+            const allScoresBelowThreshold = predictions.length > 0 && predictions.every(p => (p.score * 100) < threshold);
+            const noPredictionsFound = predictions.length === 0;
+            const isUncategorized = allScoresBelowThreshold || noPredictionsFound;
+
             setPhotos(prev => {
                 const newPhotos = new Map(prev);
                 const currentPhoto = newPhotos.get(photoId);
                 if (currentPhoto) {
-                    const updatedPhoto = { ...currentPhoto, status: PhotoStatus.ANALYZED, predictions };
+                    const finalStatus = isUncategorized ? PhotoStatus.UNCATEGORIZED : PhotoStatus.ANALYZED;
 
-                    if (userProfileRef.current.autoApplyRules) {
+                    const updatedPhoto = { ...currentPhoto, status: finalStatus, predictions: predictions };
+
+                    // Only apply auto-selection rules to clearly analyzed photos
+                    if (updatedPhoto.status === PhotoStatus.ANALYZED && userProfileRef.current.autoApplyRules) {
                         const matchesRule = applyFilterRules(updatedPhoto, userProfileRef.current.rules);
                         if (matchesRule) {
                             updatedPhoto.selected = true;

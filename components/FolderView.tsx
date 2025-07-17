@@ -12,7 +12,7 @@ interface FolderViewProps {
 }
 
 const FolderView: React.FC<FolderViewProps> = ({ photos, onSelectPhoto, onViewPhoto }) => {
-  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set([PhotoStatus.ANALYZED]));
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set([PhotoStatus.ANALYZED, PhotoStatus.UNCATEGORIZED]));
   const [sortOrder, setSortOrder] = useState<'alpha' | 'count'>('alpha');
 
   const toggleFolder = (key: string) => {
@@ -33,21 +33,22 @@ const FolderView: React.FC<FolderViewProps> = ({ photos, onSelectPhoto, onViewPh
       [PhotoStatus.QUEUED]: Photo[];
       [PhotoStatus.ANALYZING]: Photo[];
       [PhotoStatus.ERROR]: Photo[];
+      [PhotoStatus.UNCATEGORIZED]: Photo[];
     } = {
       [PhotoStatus.ANALYZED]: {},
       [PhotoStatus.QUEUED]: [],
       [PhotoStatus.ANALYZING]: [],
       [PhotoStatus.ERROR]: [],
+      [PhotoStatus.UNCATEGORIZED]: [],
     };
 
     const photosToGroup = Array.from(photos.values());
 
     for (const photo of photosToGroup) {
       if (photo.status === PhotoStatus.ANALYZED) {
-        const topPrediction = photo.predictions.length > 0
-            ? photo.predictions.reduce((max, p) => p.score > max.score ? p : max, photo.predictions[0])
-            : null;
-        const label = topPrediction ? topPrediction.label : 'Uncategorized';
+        if (photo.predictions.length === 0) continue; // Should not happen, but as a safeguard.
+        const topPrediction = photo.predictions.reduce((max, p) => p.score > max.score ? p : max, photo.predictions[0]);
+        const label = topPrediction.label;
         const capitalizedLabel = label.charAt(0).toUpperCase() + label.slice(1);
 
         if (!groups[PhotoStatus.ANALYZED][capitalizedLabel]) {
@@ -55,10 +56,11 @@ const FolderView: React.FC<FolderViewProps> = ({ photos, onSelectPhoto, onViewPh
         }
         groups[PhotoStatus.ANALYZED][capitalizedLabel].push(photo);
       } else {
-        if (!groups[photo.status]) {
-          groups[photo.status] = [];
+        // This handles QUEUED, ANALYZING, ERROR, and now UNCATEGORIZED
+        const status = photo.status as keyof typeof groups;
+        if (groups[status]) {
+          (groups[status] as Photo[]).push(photo);
         }
-        groups[photo.status].push(photo);
       }
     }
 
@@ -78,20 +80,25 @@ const FolderView: React.FC<FolderViewProps> = ({ photos, onSelectPhoto, onViewPh
       return obj;
     }, {} as Record<string, Photo[]>);
 
-
-    if (sortedAnalyzed['Uncategorized']) {
-      const uncategorized = sortedAnalyzed['Uncategorized'];
-      delete sortedAnalyzed['Uncategorized'];
-      sortedAnalyzed['Uncategorized'] = uncategorized;
-    }
     groups[PhotoStatus.ANALYZED] = sortedAnalyzed;
 
     return groups;
   }, [photos, sortOrder]);
 
+  const folderOrder = [
+    PhotoStatus.ANALYZING,
+    PhotoStatus.QUEUED,
+    PhotoStatus.ANALYZED,
+    PhotoStatus.UNCATEGORIZED,
+    PhotoStatus.ERROR,
+  ];
+
   return (
       <div className="space-y-4">
-        {Object.entries(groupedPhotos).map(([status, content]) => {
+        {folderOrder.map((status) => {
+          const content = groupedPhotos[status as keyof typeof groupedPhotos];
+          if(!content) return null;
+
           const isAnalyzed = status === PhotoStatus.ANALYZED;
           const photoList = isAnalyzed ? Object.values(content as Record<string, Photo[]>).flat() : (content as Photo[]);
           if (photoList.length === 0) return null;

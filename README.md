@@ -1,65 +1,63 @@
 # AI Photo Sorter
 
-A privacy-first, in-browser application to automatically sort and manage your local photo library using on-device AI.
+The AI Photo Sorter is a powerful, privacy-focused web application that helps you automatically organize your local photos using artificial intelligence, right in your browser. No uploads, no servers, no data collection—your photos and your data stay on your machine.
 
-![AI Photo Sorter Screenshot](https://storage.googleapis.com/project-screenshots/ai-photo-sorter-screenshot.png) *(This is a placeholder screenshot URL)*
+This tool leverages the browser's File System Access API to read your photo directories and TensorFlow.js to classify image content locally.
 
----
+## ✨ Key Features
 
-## ✨ Core Features
+### Core Functionality
+- **Local First & 100% Private**: Select a local directory on your computer. All processing happens directly in your browser. Your photos are never uploaded.
+- **AI-Powered Analysis**: Utilizes a pre-trained machine learning model (MobileNet) to scan your photos and identify objects and scenes within them.
+- **High-Performance Backend**: Automatically uses the best available AI backend for your browser, supporting **WebGPU**, **WASM**, and **WebGL** for maximum speed.
 
--   **100% Private & Secure**: Your photos are processed entirely on your device. Nothing is ever uploaded to a server, ensuring complete privacy.
--   **AI-Powered Tagging**: Leverages a built-in TensorFlow.js model (MobileNet) to scan, classify, and tag your photos based on their content.
--   **Direct File System Access**: Select a folder on your computer and manage your photos directly. The app can delete files with your permission.
--   **Powerful Rule Engine**: Create custom rules to automatically select photos that match specific labels and confidence levels (e.g., "select all photos with 'cat' at >80% confidence").
--   **Flexible Views**: Switch between a classic grid layout and a hierarchical folder view that groups photos by status and AI-detected labels.
--   **Profile Management**: Save your settings and rules into a profile that can be exported and imported as a simple JSON file.
--   **No Backend Required**: Runs entirely in the browser, making it portable and easy to use anywhere.
+### Intuitive User Interface
+- **Dual View Modes**:
+    - **Grid View**: A classic, responsive grid to see all your photos at a glance.
+    - **Folder View**: An organized, hierarchical view that automatically groups photos by their status:
+        - `Analyzing`: Photos currently being processed.
+        - `Queued`: Photos waiting for analysis.
+        - `Analyzed`: Successfully analyzed photos, grouped into sub-folders by their top AI-detected label (e.g., "Cat", "Car", "Beach").
+        - `Uncategorized`: Photos that the AI analyzed but couldn't classify with high confidence.
+        - `Error`: Photos that failed to process.
+- **Photo Viewer**: Double-click any photo to open a detailed modal view, showing a larger preview and a complete list of all AI predictions with their confidence scores.
+- **Dark Mode**: Sleek and eye-friendly dark theme that respects your system's settings.
 
----
+### Powerful Organization & Automation
+- **Custom Selection Rules**:
+    - Create powerful rules in your user profile to automatically select photos. For example: `SELECT photos with "dog" label with confidence > 80%`.
+    - Apply rules manually at any time or enable the **auto-apply** feature to have selections made for you as soon as photos are analyzed.
+- **"Uncategorized" Filtering**:
+    - Set a custom **"uncertainty threshold"** (from 0% to 50%) in your profile.
+    - If all of an image's prediction scores fall below this threshold, it is automatically marked as `Uncategorized`, separating ambiguous images for manual review.
+- **Advanced Selection Tools**:
+    - **Select/Clear All**: Bulk-select or deselect photos. This action smartly respects the current label filter.
+    - **Isolate Selection**: Instantly hide all unselected photos to focus only on what's important. Click again to show all photos.
+    - **Permanent Deletion**: Securely delete selected photos directly from your hard drive (with confirmation).
 
-## 🚀 How It Works
+### Filtering & Sorting
+- **Filter by Label**: Quickly find photos by searching for a specific label (e.g., "mountain") in the filter bar.
+- **Sortable Folders**: In Folder View, sort the `Analyzed` category sub-folders alphabetically or by the number of photos they contain.
 
-This application is a modern single-page application built with the following technologies:
+### Profile Management
+- **Personalized Experience**: The app greets you by your name, which you can set in your profile.
+- **Import/Export Profile**: Save your complete user profile, including all your custom rules, to a JSON file. This is great for backing up your settings or sharing them across devices.
 
--   **Frontend**: **React** (with Hooks), **TypeScript**, and **Tailwind CSS** for a responsive and maintainable user interface.
--   **AI Engine**: **TensorFlow.js** with the **MobileNet** model for efficient, in-browser image classification. The WASM backend is preferred for performance.
--   **File System**: The modern **File System Access API** allows the browser to securely interact with your local files and folders *after you grant permission*.
+## 🚀 How to Use
 
----
-
-## 🖥️ Getting Started
-
-1.  **Open the App**: Launch the application in a supported web browser (e.g., Google Chrome, Microsoft Edge).
-2.  **Create Profile**: On the landing page, enter your name to create a user profile. Default rules are added to get you started.
-3.  **Load Photos**: In the main view, click **"Select Directory"** in the sidebar and choose a folder containing your photos.
-4.  **AI Analysis**: The app will begin scanning and analyzing your photos. You can monitor the progress in the status bar.
+1.  **Launch the App**: Open the `index.html` file in a modern web browser that supports the File System Access API (e.g., Google Chrome, Microsoft Edge).
+2.  **Set Up Your Profile**: On your first visit, you'll be prompted to enter your name to create a user profile.
+3.  **Load Photos**: Click the **"Select Directory"** button in the sidebar to choose a folder of photos from your computer.
+4.  **Let the AI Work**: The application will begin scanning and analyzing your photos. You can watch the progress in real-time.
 5.  **Organize**:
-    -   Use the **Grid View** for a quick overview or switch to the **Folder View** to see photos grouped by category.
-    -   Click on photos to select them or double-click to view them in a larger modal with detailed prediction scores.
-    -   Apply your custom rules or use the action buttons to select, clear, and delete photos.
-6.  **Customize**: Click the settings icon next to your name to open the profile editor, where you can add, remove, and modify your filter rules. You can also import/export your entire profile.
+    - Use the **Grid View** or **Folder View** to browse your photos.
+    - Use the **filter bar** to search for specific content.
+    - **Single-click** to select photos, and use the action buttons (`Apply Rules`, `Isolate Selection`, `Delete Selected`) to manage them.
+6.  **Customize (Optional)**:
+    - Click the **settings icon** next to your name to open your profile.
+    - Add custom **selection rules**, adjust the **uncertainty threshold**, and manage your preferences.
+    - Don't forget to **export your profile** to save your settings!
 
 ---
 
-## ⚠️ Browser Compatibility
-
-This application relies on the **File System Access API**. As of now, this API is primarily supported by Chromium-based browsers like:
-
--   Google Chrome
--   Microsoft Edge
--   Opera
-
-The app will show a warning if your browser is not supported.
-
----
-
-## 📂 Project Structure
-
-The codebase is organized for maintainability and scalability:
-
--   `/components`: Contains all reusable React components, broken down by feature (e.g., `PhotoCard`, `PhotoSorterSidebar`, `FolderView`).
--   `/hooks`: Houses custom React hooks, such as `usePhotoManager`, which encapsulates the core business logic for photo management and analysis.
--   `/services`: Includes modules for external interactions, such as `api.ts` (TensorFlow.js model interaction) and `storage.ts` (localStorage management).
--   `/App.tsx`: The main application component that handles routing and state management.
--   `/index.html`: The entry point of the application, which loads Tailwind CSS and sets up the import map for modules.
+Built with ❤️ using React, TypeScript, Tailwind CSS, and TensorFlow.js.

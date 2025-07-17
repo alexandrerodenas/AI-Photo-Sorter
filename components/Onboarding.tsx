@@ -30,6 +30,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ onProfileSave }) => {
           {id: '2', label: 'dog', confidence: 80},
         ],
         autoApplyRules: true,
+        unknownThreshold: 10,
       };
       onProfileSave(newProfile);
     }

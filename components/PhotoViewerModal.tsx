@@ -13,6 +13,8 @@ interface PhotoViewerModalProps {
 const PhotoViewerModal: React.FC<PhotoViewerModalProps> = ({ photo, onClose }) => {
   if (!photo) return null;
 
+  const shouldShowPredictions = photo.status === PhotoStatus.ANALYZED || photo.status === PhotoStatus.UNCATEGORIZED;
+
   return (
       <div className="fixed inset-0 bg-black/70 z-40 flex items-center justify-center" onClick={onClose}>
         <div className="relative w-full max-w-4xl max-h-[90vh] bg-white dark:bg-gray-800 rounded-lg shadow-2xl flex flex-col md:flex-row" onClick={e => e.stopPropagation()}>
@@ -24,7 +26,7 @@ const PhotoViewerModal: React.FC<PhotoViewerModalProps> = ({ photo, onClose }) =
               <X className="w-5 h-5"/>
             </button>
             <h3 className="text-lg font-bold mb-4">AI Predictions</h3>
-            {photo.status === PhotoStatus.ANALYZED ? (
+            {shouldShowPredictions ? (
                 <ul className="space-y-3">
                   {photo.predictions.length > 0 ? photo.predictions.map((p, i) => (
                       <li key={i} className="text-sm">

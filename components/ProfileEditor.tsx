@@ -10,7 +10,10 @@ interface ProfileEditorProps {
 }
 
 export const ProfileEditor: React.FC<ProfileEditorProps> = ({ currentProfile, onSave, closeModal }) => {
-  const [profile, setProfile] = useState<UserProfile>(JSON.parse(JSON.stringify(currentProfile)));
+  const [profile, setProfile] = useState<UserProfile>(() => ({
+    ...currentProfile,
+    unknownThreshold: currentProfile.unknownThreshold ?? 10,
+  }));
   const [newRule, setNewRule] = useState({ label: '', confidence: 75 });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -69,7 +72,12 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ currentProfile, on
 
         // Basic validation
         if (typeof importedProfile.firstName === 'string' && Array.isArray(importedProfile.rules) && typeof importedProfile.autoApplyRules === 'boolean') {
-          setProfile(importedProfile);
+          // Also handle optional unknownThreshold on import
+          const newProfileState = {
+            ...importedProfile,
+            unknownThreshold: importedProfile.unknownThreshold ?? 10
+          };
+          setProfile(newProfileState);
           alert("Profile imported successfully! Review the changes and click 'Save Changes' to apply them.");
         } else {
           throw new Error("Invalid profile file format.");
@@ -109,9 +117,28 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ currentProfile, on
           </label>
         </div>
 
+        {/* Unknown Threshold Section */}
+        <div className="space-y-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <h3 className="text-lg font-bold">Uncategorized Rule</h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            If all AI prediction scores for a photo are below this threshold, it will be classified as 'Uncategorized'. This helps filter out ambiguous images.
+          </p>
+          <div>
+            <label className="block text-sm font-medium mb-1">Confidence Threshold ({profile.unknownThreshold}%)</label>
+            <input
+                type="range"
+                min="0"
+                max="50"
+                value={profile.unknownThreshold}
+                onChange={e => setProfile({...profile, unknownThreshold: parseInt(e.target.value, 10)})}
+                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-600"
+            />
+          </div>
+        </div>
+
         {/* Rules Section */}
         <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-          <h3 className="text-lg font-bold">Filter Rules</h3>
+          <h3 className="text-lg font-bold">Selection Filter Rules</h3>
           {profile.rules.length === 0 && <p className="text-gray-500 text-sm">No rules defined. Add one below!</p>}
           <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
             {profile.rules.map(rule => (
@@ -129,7 +156,7 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ currentProfile, on
 
         {/* New Rule Form */}
         <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-          <h3 className="text-lg font-bold">Add New Rule</h3>
+          <h3 className="text-lg font-bold">Add New Selection Rule</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
             <div>
               <label className="block text-sm font-medium mb-1">Label</label>
