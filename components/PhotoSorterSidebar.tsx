@@ -12,6 +12,8 @@ import {
   Settings2,
   CheckSquare,
   XSquare,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { Spinner } from './ui.tsx';
 
@@ -32,6 +34,8 @@ interface PhotoSorterSidebarProps {
   statusMessage: string;
   noAnalyzedPhotos: boolean;
   tfBackend: string | null;
+  isolateSelection: boolean;
+  onToggleIsolateSelection: () => void;
 }
 
 const PhotoSorterSidebar: React.FC<PhotoSorterSidebarProps> = ({
@@ -50,7 +54,9 @@ const PhotoSorterSidebar: React.FC<PhotoSorterSidebarProps> = ({
                                                                  totalPhotoCount,
                                                                  statusMessage,
                                                                  noAnalyzedPhotos,
-                                                                 tfBackend
+                                                                 tfBackend,
+                                                                 isolateSelection,
+                                                                 onToggleIsolateSelection,
                                                                }) => {
   return (
       <aside className="w-80 bg-white dark:bg-gray-800 p-6 flex flex-col shadow-lg shrink-0">
@@ -122,6 +128,22 @@ const PhotoSorterSidebar: React.FC<PhotoSorterSidebarProps> = ({
               title={noAnalyzedPhotos && !isLoading ? "No analyzed photos to apply rules to" : "Apply custom rules to all analyzed photos"}
           >
             <Zap className="w-5 h-5"/> Apply Manual Rules
+          </button>
+          <button
+              onClick={onToggleIsolateSelection}
+              disabled={selectedPhotoCount === 0 && !isolateSelection}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-accent text-white font-semibold rounded-md hover:bg-accent-dark transition disabled:bg-gray-400/50 disabled:text-white/80 disabled:cursor-not-allowed"
+              title={isolateSelection ? "Show all photos" : "Show only selected photos"}
+          >
+            {isolateSelection ? (
+                <>
+                  <Eye className="w-5 h-5"/> Show All
+                </>
+            ) : (
+                <>
+                  <EyeOff className="w-5 h-5"/> Isolate Selection
+                </>
+            )}
           </button>
           <button onClick={onDeleteSelected} disabled={selectedPhotoCount === 0} className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-600 text-white font-semibold rounded-md hover:bg-red-700 transition disabled:bg-red-400/50 disabled:cursor-not-allowed">
             <Trash2 className="w-5 h-5"/> Delete Selected ({selectedPhotoCount})

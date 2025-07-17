@@ -1,3 +1,4 @@
+
 // --- File System Access API type definitions for browser compatibility ---
 // This ensures TypeScript can compile features that are present in modern browsers
 // but may not be in the default TypeScript library definitions.
@@ -66,6 +67,7 @@ export const usePhotoManager = (userProfile: UserProfile) => {
     const [analysisProgress, setAnalysisProgress] = useState({ processed: 0, total: 0 });
     const [isApiSupported, setIsApiSupported] = useState(true);
     const [tfBackend, setTfBackend] = useState<string | null>(null);
+    const [isolateSelection, setIsolateSelection] = useState<boolean>(false);
 
     const directoryHandleRef = useRef<FileSystemDirectoryHandle | null>(null);
     const photosRef = useRef(photos);
@@ -86,6 +88,15 @@ export const usePhotoManager = (userProfile: UserProfile) => {
             console.warn("File System Access API (`showDirectoryPicker`) is not supported in this browser.");
         }
     }, []);
+
+    const selectedPhotos = useMemo(() => Array.from(photos.values()).filter(p => p.selected), [photos]);
+
+    useEffect(() => {
+        // If the selection becomes empty while in isolation mode, turn it off automatically.
+        if (selectedPhotos.length === 0 && isolateSelection) {
+            setIsolateSelection(false);
+        }
+    }, [selectedPhotos.length, isolateSelection]);
 
     useEffect(() => {
         if (isLoading && analysisProgress.total > 0) {
@@ -155,6 +166,7 @@ export const usePhotoManager = (userProfile: UserProfile) => {
             setIsLoading(true);
             setStatusMessage('Scanning directory...');
             setPhotos(new Map());
+            setIsolateSelection(false); // Reset isolation on new directory load
 
             const filesToProcess: {path: string, handle: FileSystemFileHandle}[] = [];
 
@@ -227,7 +239,13 @@ export const usePhotoManager = (userProfile: UserProfile) => {
         });
     }, []);
 
-    const selectedPhotos = useMemo(() => Array.from(photos.values()).filter(p => p.selected), [photos]);
+    const handleToggleIsolateSelection = useCallback(() => {
+        // Only allow enabling isolation if photos are selected.
+        // Always allow disabling isolation.
+        if (selectedPhotos.length > 0 || isolateSelection) {
+            setIsolateSelection(prev => !prev);
+        }
+    }, [selectedPhotos.length, isolateSelection]);
 
     const handleDeleteSelected = useCallback(async () => {
         if (selectedPhotos.length === 0 || !directoryHandleRef.current) return;
@@ -302,17 +320,25 @@ export const usePhotoManager = (userProfile: UserProfile) => {
         }
     }, [applyFilterRules]);
 
-    const handleSelectAll = useCallback(() => {
-        const photosToSelect = Array.from(photosRef.current.values()).filter(p => p.status === PhotoStatus.ANALYZED);
-        if (photosToSelect.length === 0) {
-            setStatusMessage("No analyzed photos to select.");
+    const handleSelectAll = useCallback((filterLabel: string) => {
+        let photosToProcess = Array.from(photosRef.current.values()).filter(p => p.status === PhotoStatus.ANALYZED);
+
+        if (filterLabel.trim()) {
+            const lowercasedFilter = filterLabel.toLowerCase().trim();
+            photosToProcess = photosToProcess.filter(p =>
+                p.predictions.some(pred => pred.label.toLowerCase().includes(lowercasedFilter))
+            );
+        }
+
+        if (photosToProcess.length === 0) {
+            setStatusMessage("No photos match the current criteria to select.");
             return;
         }
 
         let newlySelectedCount = 0;
         const newPhotos = new Map(photosRef.current);
 
-        photosToSelect.forEach(photo => {
+        photosToProcess.forEach(photo => {
             if (!photo.selected) {
                 newPhotos.set(photo.id, { ...photo, selected: true });
                 newlySelectedCount++;
@@ -325,14 +351,31 @@ export const usePhotoManager = (userProfile: UserProfile) => {
             const s = newlySelectedCount === 1 ? '' : 's';
             setStatusMessage(`Selected ${newlySelectedCount} new photo${s}.`);
         } else {
-            setStatusMessage("All analyzed photos were already selected.");
+            setStatusMessage("All matching photos were already selected.");
         }
     }, []);
 
-    const handleClearSelection = useCallback(() => {
-        const photosToClear = Array.from(photosRef.current.values()).filter(p => p.selected);
+    const handleClearSelection = useCallback((filterLabel: string) => {
+        let photosToClear = Array.from(photosRef.current.values()).filter(p => p.selected);
+
         if (photosToClear.length === 0) {
             setStatusMessage("No photos are currently selected.");
+            return;
+        }
+
+        if (filterLabel.trim()) {
+            const lowercasedFilter = filterLabel.toLowerCase().trim();
+            photosToClear = photosToClear.filter(p =>
+                p.status === PhotoStatus.ANALYZED &&
+                p.predictions.some(pred => pred.label.toLowerCase().includes(lowercasedFilter))
+            );
+        }
+
+        if (photosToClear.length === 0) {
+            const message = filterLabel.trim()
+                ? "No selected photos match the current filter."
+                : "No photos are currently selected.";
+            setStatusMessage(message);
             return;
         }
 
@@ -359,5 +402,7 @@ export const usePhotoManager = (userProfile: UserProfile) => {
         handleSelectAll,
         handleClearSelection,
         tfBackend,
+        isolateSelection,
+        handleToggleIsolateSelection,
     };
 };

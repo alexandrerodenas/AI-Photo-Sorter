@@ -3,7 +3,7 @@ import React, { useState, useMemo } from 'react';
 import type { Photo } from '../services/types.ts';
 import { PhotoStatus } from '../services/types.ts';
 import PhotoCard from './PhotoCard.tsx';
-import { ChevronRight, Folder } from 'lucide-react';
+import { ChevronRight, Folder, ArrowDownAZ, ArrowDown10 } from 'lucide-react';
 
 interface FolderViewProps {
   photos: Map<string, Photo>;
@@ -13,6 +13,7 @@ interface FolderViewProps {
 
 const FolderView: React.FC<FolderViewProps> = ({ photos, onSelectPhoto, onViewPhoto }) => {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set([PhotoStatus.ANALYZED]));
+  const [sortOrder, setSortOrder] = useState<'alpha' | 'count'>('alpha');
 
   const toggleFolder = (key: string) => {
     setExpandedFolders(prev => {
@@ -61,12 +62,22 @@ const FolderView: React.FC<FolderViewProps> = ({ photos, onSelectPhoto, onViewPh
       }
     }
 
-    const sortedAnalyzed = Object.keys(groups[PhotoStatus.ANALYZED])
-        .sort((a, b) => a.localeCompare(b))
-        .reduce((obj, key) => {
-          obj[key] = groups[PhotoStatus.ANALYZED][key];
-          return obj;
-        }, {} as Record<string, Photo[]>);
+    const sortedKeys = Object.keys(groups[PhotoStatus.ANALYZED]).sort((a, b) => {
+      if (sortOrder === 'count') {
+        const countA = groups[PhotoStatus.ANALYZED][a].length;
+        const countB = groups[PhotoStatus.ANALYZED][b].length;
+        if (countB !== countA) {
+          return countB - countA;
+        }
+      }
+      return a.localeCompare(b);
+    });
+
+    const sortedAnalyzed = sortedKeys.reduce((obj, key) => {
+      obj[key] = groups[PhotoStatus.ANALYZED][key];
+      return obj;
+    }, {} as Record<string, Photo[]>);
+
 
     if (sortedAnalyzed['Uncategorized']) {
       const uncategorized = sortedAnalyzed['Uncategorized'];
@@ -76,7 +87,7 @@ const FolderView: React.FC<FolderViewProps> = ({ photos, onSelectPhoto, onViewPh
     groups[PhotoStatus.ANALYZED] = sortedAnalyzed;
 
     return groups;
-  }, [photos]);
+  }, [photos, sortOrder]);
 
   return (
       <div className="space-y-4">
@@ -88,11 +99,33 @@ const FolderView: React.FC<FolderViewProps> = ({ photos, onSelectPhoto, onViewPh
 
           return (
               <div key={status}>
-                <div onClick={() => toggleFolder(status)} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-200/60 dark:hover:bg-gray-700/60 cursor-pointer transition-colors">
-                  <ChevronRight className={`w-5 h-5 text-gray-500 transition-transform ${isStatusExpanded ? 'rotate-90' : ''}`} />
-                  <Folder className="w-6 h-6 text-secondary" />
-                  <h3 className="font-bold text-lg capitalize">{status.toLowerCase().replace(/_/g, ' ')}</h3>
-                  <span className="text-sm text-gray-500 dark:text-gray-400">({photoList.length} photos)</span>
+                <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-200/60 dark:hover:bg-gray-700/60 transition-colors">
+                  <div onClick={() => toggleFolder(status)} className="flex items-center gap-3 flex-grow cursor-pointer">
+                    <ChevronRight className={`w-5 h-5 text-gray-500 transition-transform ${isStatusExpanded ? 'rotate-90' : ''}`} />
+                    <Folder className="w-6 h-6 text-secondary" />
+                    <h3 className="font-bold text-lg capitalize">{status.toLowerCase().replace(/_/g, ' ')}</h3>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">({photoList.length} photos)</span>
+                  </div>
+                  {isAnalyzed && isStatusExpanded && Object.keys(content as object).length > 1 && (
+                      <div className="flex items-center p-0.5 bg-gray-300 dark:bg-gray-600 rounded-md ml-auto">
+                        <button
+                            onClick={() => setSortOrder('alpha')}
+                            className={`p-1.5 rounded-sm transition-colors ${sortOrder === 'alpha' ? 'bg-white dark:bg-gray-800 text-primary shadow-sm' : 'text-gray-600 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-gray-800/50'}`}
+                            aria-label="Sort alphabetically"
+                            title="Sort alphabetically"
+                        >
+                          <ArrowDownAZ className="w-4 h-4" />
+                        </button>
+                        <button
+                            onClick={() => setSortOrder('count')}
+                            className={`p-1.5 rounded-sm transition-colors ${sortOrder === 'count' ? 'bg-white dark:bg-gray-800 text-primary shadow-sm' : 'text-gray-600 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-gray-800/50'}`}
+                            aria-label="Sort by photo count"
+                            title="Sort by photo count"
+                        >
+                          <ArrowDown10 className="w-4 h-4" />
+                        </button>
+                      </div>
+                  )}
                 </div>
 
                 {isStatusExpanded && (

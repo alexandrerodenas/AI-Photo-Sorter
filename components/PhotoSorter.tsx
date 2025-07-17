@@ -27,6 +27,8 @@ const PhotoSorter: React.FC<PhotoSorterProps> = ({ userProfile, onProfileUpdate 
     handleApplyRulesManually,
     handleSelectAll,
     handleClearSelection,
+    isolateSelection,
+    handleToggleIsolateSelection,
     tfBackend,
   } = usePhotoManager(userProfile);
 
@@ -48,8 +50,8 @@ const PhotoSorter: React.FC<PhotoSorterProps> = ({ userProfile, onProfileUpdate 
             isApiSupported={isApiSupported}
             filterLabel={filterLabel}
             onFilterChange={setFilterLabel}
-            onSelectAll={handleSelectAll}
-            onClearSelection={handleClearSelection}
+            onSelectAll={() => handleSelectAll(filterLabel)}
+            onClearSelection={() => handleClearSelection(filterLabel)}
             onApplyRules={handleApplyRulesManually}
             onDeleteSelected={handleDeleteSelected}
             selectedPhotoCount={selectedPhotos.length}
@@ -57,6 +59,8 @@ const PhotoSorter: React.FC<PhotoSorterProps> = ({ userProfile, onProfileUpdate 
             statusMessage={statusMessage}
             noAnalyzedPhotos={noAnalyzedPhotos}
             tfBackend={tfBackend}
+            isolateSelection={isolateSelection}
+            onToggleIsolateSelection={handleToggleIsolateSelection}
         />
 
         <PhotoContent
@@ -65,6 +69,7 @@ const PhotoSorter: React.FC<PhotoSorterProps> = ({ userProfile, onProfileUpdate 
             filterLabel={filterLabel}
             onSelectPhoto={handleSelectPhoto}
             onViewPhoto={setViewingPhoto}
+            isolateSelection={isolateSelection}
         />
 
         <PhotoViewerModal
