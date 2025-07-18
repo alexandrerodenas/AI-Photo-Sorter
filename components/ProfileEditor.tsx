@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import type { UserProfile } from '../services/types.ts';
 import { Trash2, PlusCircle, Save, Upload, Download } from 'lucide-react';
@@ -35,6 +34,15 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ currentProfile, on
 
   const handleRemoveRule = (id: string) => {
     setProfile(p => ({...p, rules: p.rules.filter(rule => rule.id !== id)}));
+  };
+
+  const handleRuleConfidenceChange = (id: string, confidence: number) => {
+    setProfile(p => ({
+      ...p,
+      rules: p.rules.map(rule =>
+          rule.id === id ? { ...rule, confidence } : rule
+      ),
+    }));
   };
 
   const handleExportProfile = () => {
@@ -144,13 +152,25 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ currentProfile, on
           {profile.rules.length === 0 && <p className="text-gray-500 text-sm">No rules defined. Add one below!</p>}
           <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
             {profile.rules.map(rule => (
-                <div key={rule.id} className="flex items-center gap-2 p-2 bg-gray-100 dark:bg-gray-700/50 rounded-md">
-                  <span className="font-semibold px-2 py-1 text-xs rounded-full bg-accent/20 text-accent">SELECT</span>
-                  <span>if label contains</span>
-                  <span className="font-semibold text-primary">{`"${rule.label}"`}</span>
-                  <span>with confidence</span>
-                  <span className="font-semibold text-primary">{`> ${rule.confidence}%`}</span>
-                  <button onClick={() => handleRemoveRule(rule.id)} className="ml-auto p-1 rounded-full hover:bg-red-200"><Trash2 className="w-4 h-4 text-red-600"/></button>
+                <div key={rule.id} className="flex items-center gap-3 p-2 bg-gray-100 dark:bg-gray-700/50 rounded-md text-sm">
+                  <span className="font-semibold px-2 py-1 text-xs rounded-full bg-accent/20 text-accent shrink-0">SELECT</span>
+                  <span className="whitespace-nowrap">if label contains</span>
+                  <span className="font-semibold text-primary truncate" title={rule.label}>{`"${rule.label}"`}</span>
+                  <div className="flex items-center gap-2 ml-auto flex-shrink-0">
+                    <label htmlFor={`confidence-${rule.id}`} className="text-gray-600 dark:text-gray-300">Conf.</label>
+                    <input
+                        type="range"
+                        id={`confidence-${rule.id}`}
+                        min="1"
+                        max="100"
+                        value={rule.confidence}
+                        onChange={(e) => handleRuleConfidenceChange(rule.id, parseInt(e.target.value, 10))}
+                        className="w-24 h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer dark:bg-gray-600"
+                        title={`Confidence: ${rule.confidence}%`}
+                    />
+                    <span className="font-mono text-primary w-12 text-center text-xs">{`> ${rule.confidence}%`}</span>
+                  </div>
+                  <button onClick={() => handleRemoveRule(rule.id)} className="p-1.5 rounded-full hover:bg-red-200/50 dark:hover:bg-red-900/40"><Trash2 className="w-4 h-4 text-red-600"/></button>
                 </div>
             ))}
           </div>
@@ -172,7 +192,7 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ currentProfile, on
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Confidence ({newRule.confidence}%)</label>
-              <input type="range" min="1" max="100" value={newRule.confidence} onChange={e => setNewRule({...newRule, confidence: parseInt(e.target.value)})} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-600"/>
+              <input type="range" min="1" max="100" value={newRule.confidence} onChange={e => setNewRule({...newRule, confidence: parseInt(e.target.value, 10)})} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-600"/>
             </div>
           </div>
           <button onClick={handleAddRule} className="mt-4 flex items-center gap-2 px-4 py-2 bg-accent text-white font-semibold rounded-md hover:bg-accent-dark transition">
