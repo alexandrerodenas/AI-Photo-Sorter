@@ -2,14 +2,16 @@
 import React, { useState, useRef } from 'react';
 import type { UserProfile } from '../services/types.ts';
 import { Trash2, PlusCircle, Save, Upload, Download } from 'lucide-react';
+import { AutoCompleteInput } from './ui.tsx';
 
 interface ProfileEditorProps {
   currentProfile: UserProfile;
   onSave: (newProfile: UserProfile) => void;
   closeModal: () => void;
+  allAvailableLabels: string[];
 }
 
-export const ProfileEditor: React.FC<ProfileEditorProps> = ({ currentProfile, onSave, closeModal }) => {
+export const ProfileEditor: React.FC<ProfileEditorProps> = ({ currentProfile, onSave, closeModal, allAvailableLabels }) => {
   const [profile, setProfile] = useState<UserProfile>(() => ({
     ...currentProfile,
     unknownThreshold: currentProfile.unknownThreshold ?? 10,
@@ -160,7 +162,13 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ currentProfile, on
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
             <div>
               <label className="block text-sm font-medium mb-1">Label</label>
-              <input type="text" placeholder="e.g., person" value={newRule.label} onChange={e => setNewRule({...newRule, label: e.target.value})} className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md"/>
+              <AutoCompleteInput
+                  value={newRule.label}
+                  onChange={value => setNewRule({...newRule, label: value})}
+                  suggestions={allAvailableLabels}
+                  placeholder="e.g., person"
+                  inputClassName="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md"
+              />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Confidence ({newRule.confidence}%)</label>

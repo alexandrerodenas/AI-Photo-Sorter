@@ -61,7 +61,7 @@ async function deleteFileByPath(dirHandle: FileSystemDirectoryHandle, path: stri
 
 // Helper hook to get the previous value of a prop or state.
 function usePrevious<T>(value: T): T | undefined {
-    const ref = useRef<T>();
+    const ref = useRef<T | undefined>(undefined);
     useEffect(() => {
         ref.current = value;
     }, [value]);
@@ -98,6 +98,19 @@ export const usePhotoManager = (userProfile: UserProfile) => {
             console.warn("File System Access API (`showDirectoryPicker`) is not supported in this browser.");
         }
     }, []);
+
+    const allAvailableLabels = useMemo(() => {
+        const labels = new Set<string>();
+        for (const photo of photos.values()) {
+            if (photo.status === PhotoStatus.ANALYZED) {
+                for (const prediction of photo.predictions) {
+                    const capitalizedLabel = prediction.label.charAt(0).toUpperCase() + prediction.label.slice(1);
+                    labels.add(capitalizedLabel);
+                }
+            }
+        }
+        return Array.from(labels).sort((a, b) => a.localeCompare(b));
+    }, [photos]);
 
     const selectedPhotos = useMemo(() => Array.from(photos.values()).filter(p => p.selected), [photos]);
 
@@ -467,5 +480,6 @@ export const usePhotoManager = (userProfile: UserProfile) => {
         tfBackend,
         isolateSelection,
         handleToggleIsolateSelection,
+        allAvailableLabels,
     };
 };

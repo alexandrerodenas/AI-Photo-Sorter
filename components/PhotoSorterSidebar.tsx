@@ -15,7 +15,7 @@ import {
   Eye,
   EyeOff,
 } from 'lucide-react';
-import { Spinner } from './ui.tsx';
+import { Spinner, AutoCompleteInput } from './ui.tsx';
 
 interface PhotoSorterSidebarProps {
   userProfile: UserProfile;
@@ -36,6 +36,7 @@ interface PhotoSorterSidebarProps {
   tfBackend: string | null;
   isolateSelection: boolean;
   onToggleIsolateSelection: () => void;
+  allAvailableLabels: string[];
 }
 
 const PhotoSorterSidebar: React.FC<PhotoSorterSidebarProps> = ({
@@ -57,6 +58,7 @@ const PhotoSorterSidebar: React.FC<PhotoSorterSidebarProps> = ({
                                                                  tfBackend,
                                                                  isolateSelection,
                                                                  onToggleIsolateSelection,
+                                                                 allAvailableLabels,
                                                                }) => {
   return (
       <aside className="w-80 bg-white dark:bg-gray-800 p-6 flex flex-col shadow-lg shrink-0">
@@ -97,8 +99,14 @@ const PhotoSorterSidebar: React.FC<PhotoSorterSidebarProps> = ({
         <div className="mb-6">
           <label className="font-semibold mb-2 flex items-center gap-2"><Filter className="w-5 h-5 text-secondary" /> Filter by Label</label>
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input type="text" value={filterLabel} onChange={(e) => onFilterChange(e.target.value)} placeholder="e.g., cat, dog, car..." className="w-full pl-10 pr-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-primary focus:outline-none transition"/>
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 z-10" />
+            <AutoCompleteInput
+                value={filterLabel}
+                onChange={onFilterChange}
+                suggestions={allAvailableLabels}
+                placeholder="e.g., cat, dog, car..."
+                inputClassName="w-full pl-10 pr-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-primary focus:outline-none transition"
+            />
           </div>
         </div>
 

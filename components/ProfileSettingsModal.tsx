@@ -9,9 +9,10 @@ interface ProfileSettingsModalProps {
   onClose: () => void;
   userProfile: UserProfile;
   onSave: (newProfile: UserProfile) => void;
+  allAvailableLabels: string[];
 }
 
-const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({ isOpen, onClose, userProfile, onSave }) => {
+const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({ isOpen, onClose, userProfile, onSave, allAvailableLabels }) => {
   if (!isOpen) return null;
 
   return (
@@ -22,7 +23,7 @@ const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({ isOpen, onC
             <button onClick={onClose} className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600"><X className="w-5 h-5"/></button>
           </div>
           <div className="p-6 overflow-y-auto">
-            <ProfileEditor currentProfile={userProfile} onSave={onSave} closeModal={onClose}/>
+            <ProfileEditor currentProfile={userProfile} onSave={onSave} closeModal={onClose} allAvailableLabels={allAvailableLabels}/>
           </div>
         </div>
       </div>
