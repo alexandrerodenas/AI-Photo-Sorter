@@ -1,4 +1,3 @@
-
 // --- File System Access API type definitions for browser compatibility ---
 // This ensures TypeScript can compile features that are present in modern browsers
 // but may not be in the default TypeScript library definitions.
@@ -60,6 +59,16 @@ async function deleteFileByPath(dirHandle: FileSystemDirectoryHandle, path: stri
     }
 }
 
+// Helper hook to get the previous value of a prop or state.
+function usePrevious<T>(value: T): T | undefined {
+    const ref = useRef<T>();
+    useEffect(() => {
+        ref.current = value;
+    }, [value]);
+    return ref.current;
+}
+
+
 export const usePhotoManager = (userProfile: UserProfile) => {
     const [photos, setPhotos] = useState<Map<string, Photo>>(new Map());
     const [statusMessage, setStatusMessage] = useState<string>('Ready to sort some photos! 🥳');
@@ -72,6 +81,7 @@ export const usePhotoManager = (userProfile: UserProfile) => {
     const directoryHandleRef = useRef<FileSystemDirectoryHandle | null>(null);
     const photosRef = useRef(photos);
     const userProfileRef = useRef(userProfile);
+    const prevUserProfile = usePrevious(userProfile);
 
     useEffect(() => {
         photosRef.current = photos;
@@ -109,6 +119,51 @@ export const usePhotoManager = (userProfile: UserProfile) => {
             }
         }
     }, [analysisProgress, isLoading]);
+
+    // Effect to re-calculate photo statuses when the unknown threshold changes
+    useEffect(() => {
+        if (!prevUserProfile || photos.size === 0) {
+            return;
+        }
+
+        const newThreshold = userProfile.unknownThreshold ?? 10;
+        const oldThreshold = prevUserProfile.unknownThreshold ?? 10;
+
+        if (newThreshold !== oldThreshold) {
+            setStatusMessage('Recalculating photo statuses based on new threshold...');
+
+            setPhotos(prevPhotos => {
+                const newPhotos = new Map(prevPhotos);
+                let changedCount = 0;
+
+                for (const [id, photo] of newPhotos.entries()) {
+                    // Only re-evaluate photos that have been previously analyzed or deemed uncategorized.
+                    if (photo.status === PhotoStatus.ANALYZED || photo.status === PhotoStatus.UNCATEGORIZED) {
+                        const { predictions } = photo;
+                        const allScoresBelowThreshold = predictions.length > 0 && predictions.every(p => (p.score * 100) < newThreshold);
+                        const noPredictionsFound = predictions.length === 0;
+                        const isUncategorized = allScoresBelowThreshold || noPredictionsFound;
+
+                        const newStatus = isUncategorized ? PhotoStatus.UNCATEGORIZED : PhotoStatus.ANALYZED;
+
+                        if (photo.status !== newStatus) {
+                            newPhotos.set(id, { ...photo, status: newStatus });
+                            changedCount++;
+                        }
+                    }
+                }
+
+                if (changedCount > 0) {
+                    const s = changedCount === 1 ? '' : 's';
+                    setStatusMessage(`Updated ${changedCount} photo status${s} based on the new threshold. ✅`);
+                } else {
+                    setStatusMessage('Profile updated. No photo statuses needed to change. ✅');
+                }
+                return newPhotos;
+            });
+        }
+    }, [userProfile, prevUserProfile, photos.size, setStatusMessage]);
+
 
     const applyFilterRules = useCallback((photo: Photo, rules: FilterRule[]): boolean => {
         for (const rule of rules) {
