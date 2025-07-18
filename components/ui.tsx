@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useRef } from 'react';
 import { PhotoStatus } from '../services/types.ts';
 import { Loader, Check, AlertCircle, HelpCircle } from 'lucide-react';
@@ -110,6 +111,41 @@ export const AutoCompleteInput: React.FC<AutoCompleteInputProps> = ({
                     ))}
                 </ul>
             )}
+        </div>
+    );
+};
+
+
+export const Tooltip: React.FC<{ content: string; children: React.ReactNode, side?: 'top' | 'right' | 'bottom' | 'left' }> = ({ content, children, side = 'right' }) => {
+    const sideClasses = {
+        right: 'left-full ml-2 top-1/2 -translate-y-1/2',
+        left: 'right-full mr-2 top-1/2 -translate-y-1/2',
+        top: 'bottom-full mb-2 left-1/2 -translate-x-1/2',
+        bottom: 'top-full mt-2 left-1/2 -translate-x-1/2',
+    };
+
+    const originClasses = {
+        right: 'origin-left',
+        left: 'origin-right',
+        top: 'origin-bottom',
+        bottom: 'origin-top',
+    }
+
+    return (
+        <div className="relative group flex items-center">
+            {children}
+            <div
+                className={`
+          absolute ${sideClasses[side]} 
+          w-auto px-2 py-1 min-w-max rounded-md shadow-md 
+          text-white bg-gray-900 dark:bg-gray-950
+          text-xs font-bold 
+          transition-all duration-100 scale-0 group-hover:scale-100 ${originClasses[side]}
+          z-50 pointer-events-none
+        `}
+            >
+                {content}
+            </div>
         </div>
     );
 };
