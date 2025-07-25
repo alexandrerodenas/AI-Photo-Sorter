@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import type { Photo } from '../services/types.ts';
 import { PhotoStatus } from '../services/types.ts';
 import PhotoCard from './PhotoCard.tsx';
-import { ChevronRight, Folder, ArrowDownAZ, ArrowDown10 } from 'lucide-react';
+import { ChevronRight, Folder, ArrowDownAZ, ArrowDown10, Tag, Boxes } from 'lucide-react';
 
 interface FolderViewProps {
   photos: Map<string, Photo>;
@@ -13,6 +13,7 @@ interface FolderViewProps {
 const FolderView: React.FC<FolderViewProps> = ({ photos, onSelectPhoto, onViewPhoto }) => {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set([PhotoStatus.ANALYZED, PhotoStatus.UNCATEGORIZED]));
   const [sortOrder, setSortOrder] = useState<'alpha' | 'count'>('alpha');
+  const [groupBy, setGroupBy] = useState<'classification' | 'detection'>('classification');
 
   const toggleFolder = (key: string) => {
     setExpandedFolders(prev => {
@@ -45,17 +46,32 @@ const FolderView: React.FC<FolderViewProps> = ({ photos, onSelectPhoto, onViewPh
 
     for (const photo of photosToGroup) {
       if (photo.status === PhotoStatus.ANALYZED) {
-        if (photo.classifications.length === 0) continue; // Should not happen, but as a safeguard.
-        const topPrediction = photo.classifications.reduce((max, p) => p.score > max.score ? p : max, photo.classifications[0]);
-        const label = topPrediction.label;
-        const capitalizedLabel = label.charAt(0).toUpperCase() + label.slice(1);
+        if (groupBy === 'classification') {
+          if (photo.classifications.length > 0) {
+            const topPrediction = photo.classifications.reduce((max, p) => p.score > max.score ? p : max, photo.classifications[0]);
+            const label = topPrediction.label;
+            const capitalizedLabel = label.charAt(0).toUpperCase() + label.slice(1);
 
-        if (!groups[PhotoStatus.ANALYZED][capitalizedLabel]) {
-          groups[PhotoStatus.ANALYZED][capitalizedLabel] = [];
+            if (!groups[PhotoStatus.ANALYZED][capitalizedLabel]) {
+              groups[PhotoStatus.ANALYZED][capitalizedLabel] = [];
+            }
+            groups[PhotoStatus.ANALYZED][capitalizedLabel].push(photo);
+          }
+        } else { // groupBy === 'detection'
+          if (photo.detections.length > 0) {
+            const uniqueLabels = new Set<string>();
+            photo.detections.forEach(d => uniqueLabels.add(d.label));
+
+            uniqueLabels.forEach(label => {
+              const capitalizedLabel = label.charAt(0).toUpperCase() + label.slice(1);
+              if (!groups[PhotoStatus.ANALYZED][capitalizedLabel]) {
+                groups[PhotoStatus.ANALYZED][capitalizedLabel] = [];
+              }
+              groups[PhotoStatus.ANALYZED][capitalizedLabel].push(photo);
+            });
+          }
         }
-        groups[PhotoStatus.ANALYZED][capitalizedLabel].push(photo);
       } else {
-        // This handles QUEUED, ANALYZING, ERROR, and now UNCATEGORIZED
         const status = photo.status as keyof typeof groups;
         if (groups[status]) {
           (groups[status] as Photo[]).push(photo);
@@ -82,7 +98,7 @@ const FolderView: React.FC<FolderViewProps> = ({ photos, onSelectPhoto, onViewPh
     groups[PhotoStatus.ANALYZED] = sortedAnalyzed;
 
     return groups;
-  }, [photos, sortOrder]);
+  }, [photos, sortOrder, groupBy]);
 
   const folderOrder = [
     PhotoStatus.ANALYZING,
@@ -112,24 +128,46 @@ const FolderView: React.FC<FolderViewProps> = ({ photos, onSelectPhoto, onViewPh
                     <h3 className="font-bold text-lg capitalize">{status.toLowerCase().replace(/_/g, ' ')}</h3>
                     <span className="text-sm text-gray-500 dark:text-gray-400">({photoList.length} photos)</span>
                   </div>
-                  {isAnalyzed && isStatusExpanded && Object.keys(content as object).length > 1 && (
-                      <div className="flex items-center p-0.5 bg-gray-300 dark:bg-gray-600 rounded-md ml-auto">
-                        <button
-                            onClick={() => setSortOrder('alpha')}
-                            className={`p-1.5 rounded-sm transition-colors ${sortOrder === 'alpha' ? 'bg-white dark:bg-gray-800 text-primary shadow-sm' : 'text-gray-600 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-gray-800/50'}`}
-                            aria-label="Sort alphabetically"
-                            title="Sort alphabetically"
-                        >
-                          <ArrowDownAZ className="w-4 h-4" />
-                        </button>
-                        <button
-                            onClick={() => setSortOrder('count')}
-                            className={`p-1.5 rounded-sm transition-colors ${sortOrder === 'count' ? 'bg-white dark:bg-gray-800 text-primary shadow-sm' : 'text-gray-600 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-gray-800/50'}`}
-                            aria-label="Sort by photo count"
-                            title="Sort by photo count"
-                        >
-                          <ArrowDown10 className="w-4 h-4" />
-                        </button>
+                  {isAnalyzed && isStatusExpanded && (
+                      <div className="flex items-center gap-2 ml-auto">
+                        <div className="flex items-center p-0.5 bg-gray-300 dark:bg-gray-600 rounded-md">
+                          <button
+                              onClick={() => setGroupBy('classification')}
+                              className={`p-1.5 rounded-sm transition-colors ${groupBy === 'classification' ? 'bg-white dark:bg-gray-800 text-primary shadow-sm' : 'text-gray-600 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-gray-800/50'}`}
+                              aria-label="Group by classification"
+                              title="Group by classification"
+                          >
+                            <Tag className="w-4 h-4" />
+                          </button>
+                          <button
+                              onClick={() => setGroupBy('detection')}
+                              className={`p-1.5 rounded-sm transition-colors ${groupBy === 'detection' ? 'bg-white dark:bg-gray-800 text-primary shadow-sm' : 'text-gray-600 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-gray-800/50'}`}
+                              aria-label="Group by detected objects"
+                              title="Group by detected objects"
+                          >
+                            <Boxes className="w-4 h-4" />
+                          </button>
+                        </div>
+                        {Object.keys(content as object).length > 1 && (
+                            <div className="flex items-center p-0.5 bg-gray-300 dark:bg-gray-600 rounded-md">
+                              <button
+                                  onClick={() => setSortOrder('alpha')}
+                                  className={`p-1.5 rounded-sm transition-colors ${sortOrder === 'alpha' ? 'bg-white dark:bg-gray-800 text-primary shadow-sm' : 'text-gray-600 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-gray-800/50'}`}
+                                  aria-label="Sort alphabetically"
+                                  title="Sort alphabetically"
+                              >
+                                <ArrowDownAZ className="w-4 h-4" />
+                              </button>
+                              <button
+                                  onClick={() => setSortOrder('count')}
+                                  className={`p-1.5 rounded-sm transition-colors ${sortOrder === 'count' ? 'bg-white dark:bg-gray-800 text-primary shadow-sm' : 'text-gray-600 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-gray-800/50'}`}
+                                  aria-label="Sort by photo count"
+                                  title="Sort by photo count"
+                              >
+                                <ArrowDown10 className="w-4 h-4" />
+                              </button>
+                            </div>
+                        )}
                       </div>
                   )}
                 </div>
