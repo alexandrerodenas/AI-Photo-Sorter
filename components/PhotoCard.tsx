@@ -2,7 +2,7 @@ import React, { useRef, useEffect } from 'react';
 import type { Photo } from '../services/types.ts';
 import { PhotoStatus } from '../services/types.ts';
 import { StatusPill } from './ui.tsx';
-import { Check, Tag } from 'lucide-react';
+import { Check, Tag, Boxes } from 'lucide-react';
 
 interface PhotoCardProps {
   photo: Photo;
@@ -43,6 +43,11 @@ function PhotoCard({ photo, onSelect, onView }: PhotoCardProps) {
       ? photo.classifications.reduce((max, p) => p.score > max.score ? p : max, photo.classifications[0])
       : null;
 
+  // Find the prediction with the highest score from detections
+  const topDetection = photo.status === PhotoStatus.ANALYZED && photo.detections.length > 0
+      ? photo.detections.reduce((max, p) => p.score > max.score ? p : max, photo.detections[0])
+      : null;
+
   return (
       <div
           className="relative group aspect-square bg-gray-200 dark:bg-gray-800 rounded-lg overflow-hidden cursor-pointer shadow-md hover:shadow-xl transition-all duration-300"
@@ -62,17 +67,34 @@ function PhotoCard({ photo, onSelect, onView }: PhotoCardProps) {
         <StatusPill status={photo.status} />
 
         <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/70 to-transparent">
-          {topClassification && (
-              <div className="flex items-center justify-between text-white mb-1">
-                <div className="flex items-center gap-1.5 overflow-hidden">
-                  <Tag className="w-3 h-3 text-white/90 shrink-0" />
-                  <p className="text-sm font-bold capitalize truncate" title={topClassification.label}>
-                    {topClassification.label}
-                  </p>
-                </div>
-                <span className="text-xs font-mono bg-white/20 px-1.5 py-0.5 rounded-full">
-                        {`${(topClassification.score * 100).toFixed(0)}%`}
-                    </span>
+          {(topDetection || topClassification) && (
+              <div className="mb-1 space-y-1">
+                {topDetection && (
+                    <div className="flex items-center justify-between text-white">
+                      <div className="flex items-center gap-1.5 overflow-hidden">
+                        <Boxes className="w-3 h-3 text-white/90 shrink-0" />
+                        <p className="text-sm font-bold capitalize truncate" title={topDetection.label}>
+                          {topDetection.label}
+                        </p>
+                      </div>
+                      <span className="text-xs font-mono bg-accent/20 px-1.5 py-0.5 rounded-full">
+                            {`${(topDetection.score * 100).toFixed(0)}%`}
+                        </span>
+                    </div>
+                )}
+                {topClassification && (
+                    <div className="flex items-center justify-between text-white">
+                      <div className="flex items-center gap-1.5 overflow-hidden">
+                        <Tag className="w-3 h-3 text-white/90 shrink-0" />
+                        <p className="text-sm font-bold capitalize truncate" title={topClassification.label}>
+                          {topClassification.label}
+                        </p>
+                      </div>
+                      <span className="text-xs font-mono bg-white/20 px-1.5 py-0.5 rounded-full">
+                            {`${(topClassification.score * 100).toFixed(0)}%`}
+                        </span>
+                    </div>
+                )}
               </div>
           )}
           <p className="text-white text-xs truncate" title={photo.id.split(/[\\/]/).pop()}>
