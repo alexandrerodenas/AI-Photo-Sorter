@@ -7,10 +7,11 @@ interface ProfileEditorProps {
   currentProfile: UserProfile;
   onSave: (newProfile: UserProfile) => void;
   closeModal: () => void;
-  allAvailableLabels: string[];
+  allAvailableClassificationLabels: string[];
+  allAvailableDetectionLabels: string[];
 }
 
-export const ProfileEditor: React.FC<ProfileEditorProps> = ({ currentProfile, onSave, closeModal, allAvailableLabels }) => {
+export const ProfileEditor: React.FC<ProfileEditorProps> = ({ currentProfile, onSave, closeModal, allAvailableClassificationLabels, allAvailableDetectionLabels }) => {
   const [profile, setProfile] = useState<UserProfile>(() => ({
     ...currentProfile,
     classificationRules: currentProfile.classificationRules || [],
@@ -178,7 +179,7 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ currentProfile, on
             {profile.classificationRules.map(rule => (
                 <div key={rule.id} className="flex items-center gap-2 p-2 bg-gray-100 dark:bg-gray-700/50 rounded-md">
                   <span className="font-semibold px-2 py-1 text-xs rounded-full bg-primary/20 text-primary">SELECT</span>
-                  <span>if classification contains</span>
+                  <span>if contains</span>
                   <span className="font-semibold text-primary">{`"${rule.label}"`}</span>
                   <span>with confidence</span>
                   <span className="font-semibold text-primary">{`> ${rule.confidence}%`}</span>
@@ -195,7 +196,7 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ currentProfile, on
                     placeholder="e.g., beach, forest"
                     value={newClassificationRule.label}
                     onChange={val => setNewClassificationRule({...newClassificationRule, label: val})}
-                    suggestions={allAvailableLabels}
+                    suggestions={allAvailableClassificationLabels}
                 />
               </div>
               <div>
@@ -234,7 +235,7 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ currentProfile, on
                     placeholder="e.g., person, car, dog"
                     value={newDetectionRule.label}
                     onChange={val => setNewDetectionRule({...newDetectionRule, label: val})}
-                    suggestions={allAvailableLabels}
+                    suggestions={allAvailableDetectionLabels}
                 />
               </div>
               <div>

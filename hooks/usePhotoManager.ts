@@ -88,15 +88,24 @@ export const usePhotoManager = (userProfile: UserProfile) => {
         }
     }, []);
 
-    const allAvailableLabels = useMemo(() => {
-        const labels = new Set<string>();
+    const { allAvailableClassificationLabels, allAvailableDetectionLabels, allAvailableLabels } = useMemo(() => {
+        const classificationLabels = new Set<string>();
+        const detectionLabels = new Set<string>();
+
         for (const photo of photos.values()) {
             if (photo.status === PhotoStatus.ANALYZED || photo.status === PhotoStatus.UNCATEGORIZED) {
-                photo.classifications.forEach(c => labels.add(c.label.toLowerCase()));
-                photo.detections.forEach(d => labels.add(d.label.toLowerCase()));
+                photo.classifications.forEach(c => classificationLabels.add(c.label.toLowerCase()));
+                photo.detections.forEach(d => detectionLabels.add(d.label.toLowerCase()));
             }
         }
-        return Array.from(labels).sort();
+
+        const allLabels = new Set([...classificationLabels, ...detectionLabels]);
+
+        return {
+            allAvailableClassificationLabels: Array.from(classificationLabels).sort(),
+            allAvailableDetectionLabels: Array.from(detectionLabels).sort(),
+            allAvailableLabels: Array.from(allLabels).sort()
+        };
     }, [photos]);
 
     const selectedPhotos = useMemo(() => Array.from(photos.values()).filter(p => p.selected), [photos]);
@@ -440,5 +449,7 @@ export const usePhotoManager = (userProfile: UserProfile) => {
         isolateSelection,
         handleToggleIsolateSelection,
         allAvailableLabels,
+        allAvailableClassificationLabels,
+        allAvailableDetectionLabels,
     };
 };

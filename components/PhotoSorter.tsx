@@ -32,6 +32,8 @@ const PhotoSorter: React.FC<PhotoSorterProps> = ({ userProfile, onProfileUpdate 
     handleToggleIsolateSelection,
     tfBackend,
     allAvailableLabels,
+    allAvailableClassificationLabels,
+    allAvailableDetectionLabels,
   } = usePhotoManager(userProfile);
 
   const [filterLabel, setFilterLabel] = useState<string>('');
@@ -85,7 +87,8 @@ const PhotoSorter: React.FC<PhotoSorterProps> = ({ userProfile, onProfileUpdate 
             onClose={() => setProfileModalOpen(false)}
             userProfile={userProfile}
             onSave={onProfileUpdate}
-            allAvailableLabels={allAvailableLabels}
+            allAvailableClassificationLabels={allAvailableClassificationLabels}
+            allAvailableDetectionLabels={allAvailableDetectionLabels}
         />
       </div>
   );

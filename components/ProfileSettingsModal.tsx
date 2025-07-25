@@ -10,10 +10,11 @@ interface ProfileSettingsModalProps {
   onClose: () => void;
   userProfile: UserProfile;
   onSave: (newProfile: UserProfile) => void;
-  allAvailableLabels: string[];
+  allAvailableClassificationLabels: string[];
+  allAvailableDetectionLabels: string[];
 }
 
-const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({ isOpen, onClose, userProfile, onSave, allAvailableLabels }) => {
+const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({ isOpen, onClose, userProfile, onSave, allAvailableClassificationLabels, allAvailableDetectionLabels }) => {
   if (!isOpen) return null;
 
   return (
@@ -24,7 +25,7 @@ const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({ isOpen, onC
             <button onClick={onClose} className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600"><X className="w-5 h-5"/></button>
           </div>
           <div className="p-6 overflow-y-auto">
-            <ProfileEditor currentProfile={userProfile} onSave={onSave} closeModal={onClose} allAvailableLabels={allAvailableLabels} />
+            <ProfileEditor currentProfile={userProfile} onSave={onSave} closeModal={onClose} allAvailableClassificationLabels={allAvailableClassificationLabels} allAvailableDetectionLabels={allAvailableDetectionLabels} />
           </div>
         </div>
       </div>
