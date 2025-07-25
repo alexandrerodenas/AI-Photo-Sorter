@@ -17,6 +17,7 @@ This tool leverages the browser's File System Access API to read your photo dire
 - **Dual View Modes**:
     - **Grid View**: A classic, responsive grid to see all your photos at a glance.
     - **Folder View**: An organized, hierarchical view that automatically groups photos by their status. Analyzed photos are grouped into sub-folders based on their top *classification* label (e.g., "Cat," "Car," "Beach").
+- **AI Model Loading Indicator**: See the real-time status of the AI models as they load in the background, so you know exactly when the app is ready for analysis.
 - **Detailed Photo Viewer**: Double-click any photo to open a detailed modal view, showing a larger preview and two separate lists:
     - All AI scene classifications with confidence scores.
     - All detected objects with their confidence scores.

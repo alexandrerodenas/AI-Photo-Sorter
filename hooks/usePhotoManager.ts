@@ -34,7 +34,7 @@ declare global {
 // --- End of File System Access API type definitions ---
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import type { UserProfile, Photo, FilterRule, Prediction } from '../services/types.ts';
+import type { UserProfile, Photo, FilterRule, Prediction, ModelsLoadState } from '../services/types.ts';
 import { PhotoStatus } from '../services/types.ts';
 import * as api from '../services/api.ts';
 
@@ -67,6 +67,8 @@ export const usePhotoManager = (userProfile: UserProfile) => {
     const [isApiSupported, setIsApiSupported] = useState(true);
     const [tfBackend, setTfBackend] = useState<string | null>(null);
     const [isolateSelection, setIsolateSelection] = useState<boolean>(false);
+    const [modelsLoadState, setModelsLoadState] = useState<ModelsLoadState>({ classification: 'idle', detection: 'idle' });
+
 
     const directoryHandleRef = useRef<FileSystemDirectoryHandle | null>(null);
     const photosRef = useRef(photos);
@@ -86,6 +88,13 @@ export const usePhotoManager = (userProfile: UserProfile) => {
             setStatusMessage('Browser not supported. Use Chrome or Edge for directory access.');
             console.warn("File System Access API (`showDirectoryPicker`) is not supported in this browser.");
         }
+    }, []);
+
+    // Preload models and subscribe to their loading status
+    useEffect(() => {
+        api.preloadModels();
+        const unsubscribe = api.subscribeToModelStatus(setModelsLoadState);
+        return () => unsubscribe(); // Cleanup on unmount
     }, []);
 
     const { allAvailableClassificationLabels, allAvailableDetectionLabels, allAvailableLabels } = useMemo(() => {
@@ -451,5 +460,6 @@ export const usePhotoManager = (userProfile: UserProfile) => {
         allAvailableLabels,
         allAvailableClassificationLabels,
         allAvailableDetectionLabels,
+        modelsLoadState,
     };
 };

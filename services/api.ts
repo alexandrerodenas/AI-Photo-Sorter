@@ -1,4 +1,4 @@
-import type { Prediction } from './types.ts';
+import type { Prediction, ModelsLoadState, ModelLoadStatus } from './types.ts';
 import * as mobilenet from '@tensorflow-models/mobilenet';
 
 // TensorFlow will be loaded dynamically.
@@ -7,6 +7,34 @@ let detectionModelPromise: Promise<any> | null = null; // Will hold a cocoSsd.Ob
 let backendName: string | null = null;
 let tf: any = null;
 let cocoSsd: any = null;
+
+// --- Model Status Tracking ---
+const modelStatus: ModelsLoadState = {
+  classification: 'idle',
+  detection: 'idle',
+};
+const subscribers = new Set<(status: ModelsLoadState) => void>();
+
+const updateStatus = (model: keyof ModelsLoadState, status: ModelLoadStatus) => {
+  if (modelStatus[model] !== status) {
+    modelStatus[model] = status;
+    notifySubscribers();
+  }
+};
+
+const notifySubscribers = () => {
+  // Notify with a copy to prevent mutation issues
+  subscribers.forEach(callback => callback({ ...modelStatus }));
+};
+
+export const subscribeToModelStatus = (callback: (status: ModelsLoadState) => void) => {
+  subscribers.add(callback);
+  callback({ ...modelStatus }); // Immediately notify with the current status
+  return () => {
+    subscribers.delete(callback);
+  }; // Return an unsubscribe function
+};
+// --- End Model Status Tracking ---
 
 // Exported function to get the backend name after it's been initialized.
 export const getTfBackend = (): string | null => backendName;
@@ -42,11 +70,19 @@ const initializeTf = async () => {
 const getClassificationModel = () => {
   if (!classificationModelPromise) {
     classificationModelPromise = (async () => {
-      await initializeTf();
-      console.log(`Loading MobileNet classification model...`);
-      const model = await mobilenet.load();
-      console.log('MobileNet model loaded successfully.');
-      return model;
+      try {
+        updateStatus('classification', 'loading');
+        await initializeTf();
+        console.log(`Loading MobileNet classification model...`);
+        const model = await mobilenet.load();
+        console.log('MobileNet model loaded successfully.');
+        updateStatus('classification', 'loaded');
+        return model;
+      } catch (error) {
+        console.error('Failed to load classification model:', error);
+        updateStatus('classification', 'error');
+        throw error;
+      }
     })();
   }
   return classificationModelPromise;
@@ -55,15 +91,29 @@ const getClassificationModel = () => {
 const getDetectionModel = () => {
   if (!detectionModelPromise) {
     detectionModelPromise = (async () => {
-      await initializeTf();
-      console.log('Loading COCO-SSD object detection model...');
-      const model = await cocoSsd.load();
-      console.log('COCO-SSD model loaded successfully.');
-      return model;
+      try {
+        updateStatus('detection', 'loading');
+        await initializeTf();
+        console.log('Loading COCO-SSD object detection model...');
+        const model = await cocoSsd.load();
+        console.log('COCO-SSD model loaded successfully.');
+        updateStatus('detection', 'loaded');
+        return model;
+      } catch (error) {
+        console.error('Failed to load detection model:', error);
+        updateStatus('detection', 'error');
+        throw error;
+      }
     })();
   }
   return detectionModelPromise;
 }
+
+export const preloadModels = () => {
+  console.log('Preloading AI models...');
+  getClassificationModel();
+  getDetectionModel();
+};
 
 // Helper function to create an Image element from a data URL
 const createImageElement = (dataUrl: string): Promise<HTMLImageElement> => {

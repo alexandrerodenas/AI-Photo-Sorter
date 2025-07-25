@@ -1,7 +1,5 @@
-
-
 import React from 'react';
-import type { UserProfile } from '../services/types.ts';
+import type { UserProfile, ModelsLoadState } from '../services/types.ts';
 import {
   FolderOpen,
   Trash2,
@@ -18,6 +16,7 @@ import {
 } from 'lucide-react';
 import { Spinner } from './ui.tsx';
 import AutocompleteInput from './AutocompleteInput.tsx';
+import ModelLoadingIndicator from "./ModelLoadingIndicator.tsx";
 
 interface PhotoSorterSidebarProps {
   userProfile: UserProfile;
@@ -39,6 +38,7 @@ interface PhotoSorterSidebarProps {
   isolateSelection: boolean;
   onToggleIsolateSelection: () => void;
   allAvailableLabels: string[];
+  modelsLoadState: ModelsLoadState;
 }
 
 const PhotoSorterSidebar: React.FC<PhotoSorterSidebarProps> = ({
@@ -61,6 +61,7 @@ const PhotoSorterSidebar: React.FC<PhotoSorterSidebarProps> = ({
                                                                  isolateSelection,
                                                                  onToggleIsolateSelection,
                                                                  allAvailableLabels,
+                                                                 modelsLoadState,
                                                                }) => {
   return (
       <aside className="w-80 bg-white dark:bg-gray-800 p-6 flex flex-col shadow-lg shrink-0">
@@ -167,6 +168,9 @@ const PhotoSorterSidebar: React.FC<PhotoSorterSidebarProps> = ({
             <span>Selected</span>
             <span className="px-2 py-0.5 bg-accent/20 text-accent rounded-full">{selectedPhotoCount}</span>
           </div>
+
+          <ModelLoadingIndicator status={modelsLoadState} />
+
           <div className="mt-4 text-xs text-gray-500 dark:text-gray-400 p-2 bg-gray-100 dark:bg-gray-700/50 rounded-md text-center space-y-1">
             <p>{statusMessage}</p>
             {tfBackend && (

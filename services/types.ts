@@ -29,6 +29,13 @@ export interface FilterRule {
 
 export type ThumbnailSize = 'XS' | 'S' | 'M' | 'L' | 'XL';
 
+export type ModelLoadStatus = 'idle' | 'loading' | 'loaded' | 'error';
+
+export interface ModelsLoadState {
+  classification: ModelLoadStatus;
+  detection: ModelLoadStatus;
+}
+
 export interface UserProfile {
   firstName: string;
   classificationRules: FilterRule[];
