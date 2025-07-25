@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import type { Photo } from '../services/types.ts';
 import { PhotoStatus } from '../services/types.ts';
@@ -46,8 +45,8 @@ const FolderView: React.FC<FolderViewProps> = ({ photos, onSelectPhoto, onViewPh
 
     for (const photo of photosToGroup) {
       if (photo.status === PhotoStatus.ANALYZED) {
-        if (photo.predictions.length === 0) continue; // Should not happen, but as a safeguard.
-        const topPrediction = photo.predictions.reduce((max, p) => p.score > max.score ? p : max, photo.predictions[0]);
+        if (photo.classifications.length === 0) continue; // Should not happen, but as a safeguard.
+        const topPrediction = photo.classifications.reduce((max, p) => p.score > max.score ? p : max, photo.classifications[0]);
         const label = topPrediction.label;
         const capitalizedLabel = label.charAt(0).toUpperCase() + label.slice(1);
 

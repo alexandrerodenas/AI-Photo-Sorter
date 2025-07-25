@@ -1,54 +1,69 @@
 import type { Prediction } from './types.ts';
-import type { MobileNet } from '@tensorflow-models/mobilenet';
+import * as mobilenet from '@tensorflow-models/mobilenet';
 
-// A singleton promise to ensure the model is loaded only once.
-let modelPromise: Promise<MobileNet> | null = null;
+// TensorFlow will be loaded dynamically.
+let classificationModelPromise: Promise<any> | null = null; // Will hold a mobilenet.MobileNet
+let detectionModelPromise: Promise<any> | null = null; // Will hold a cocoSsd.ObjectDetection for COCO-SSD
 let backendName: string | null = null;
+let tf: any = null;
+let cocoSsd: any = null;
 
 // Exported function to get the backend name after it's been initialized.
 export const getTfBackend = (): string | null => backendName;
 
-const getModel = () => {
-  if (!modelPromise) {
-    // We create an async block to dynamically import and initialize the model.
-    // This ensures TF.js and its modules are only loaded when needed,
-    // preventing load-time errors from crashing the entire app.
-    modelPromise = (async () => {
-      console.log('Dynamically loading TensorFlow.js and MobileNet...');
-      const tf = await import('@tensorflow/tfjs');
-      // Dynamically import backends to register them
-      await import('@tensorflow/tfjs-backend-webgpu');
-      await import('@tensorflow/tfjs-backend-wasm');
-      await import('@tensorflow/tfjs-backend-webgl');
-      const mobilenet = await import('@tensorflow-models/mobilenet');
+const initializeTf = async () => {
+  if (tf) return;
+  console.log('Dynamically loading TensorFlow.js...');
+  tf = await import('@tensorflow/tfjs');
+  cocoSsd = await import('@tensorflow-models/coco-ssd');
+  await import('@tensorflow/tfjs-backend-webgpu');
+  await import('@tensorflow/tfjs-backend-wasm');
+  await import('@tensorflow/tfjs-backend-webgl');
 
-      try {
-        await tf.setBackend('webgpu');
-        console.log('Using WebGPU backend for TensorFlow.js');
-      } catch (e) {
-        console.warn('WebGPU backend not available, falling back to WASM.', e);
-        try {
-          await tf.setBackend('wasm');
-          console.log('Using WASM backend for TensorFlow.js');
-        } catch (e2) {
-          console.warn('WASM backend not available, falling back to WebGL.', e2);
-          await tf.setBackend('webgl');
-        }
-      }
+  try {
+    await tf.setBackend('webgpu');
+    console.log('Using WebGPU backend for TensorFlow.js');
+  } catch (e) {
+    console.warn('WebGPU backend not available, falling back to WASM.', e);
+    try {
+      await tf.setBackend('wasm');
+      console.log('Using WASM backend for TensorFlow.js');
+    } catch (e2) {
+      console.warn('WASM backend not available, falling back to WebGL.', e2);
+      await tf.setBackend('webgl');
+    }
+  }
 
-      // Wait for the backend to be fully initialized.
-      await tf.ready();
-      // Capture the backend name so it can be displayed in the UI.
-      backendName = tf.getBackend()?.toUpperCase();
+  await tf.ready();
+  backendName = tf.getBackend()?.toUpperCase();
+  console.log(`TensorFlow.js backend ready (${backendName}).`);
+}
 
-      console.log(`TensorFlow.js backend ready (${backendName}). Loading MobileNet model...`);
+const getClassificationModel = () => {
+  if (!classificationModelPromise) {
+    classificationModelPromise = (async () => {
+      await initializeTf();
+      console.log(`Loading MobileNet classification model...`);
       const model = await mobilenet.load();
       console.log('MobileNet model loaded successfully.');
       return model;
     })();
   }
-  return modelPromise;
+  return classificationModelPromise;
 };
+
+const getDetectionModel = () => {
+  if (!detectionModelPromise) {
+    detectionModelPromise = (async () => {
+      await initializeTf();
+      console.log('Loading COCO-SSD object detection model...');
+      const model = await cocoSsd.load();
+      console.log('COCO-SSD model loaded successfully.');
+      return model;
+    })();
+  }
+  return detectionModelPromise;
+}
 
 // Helper function to create an Image element from a data URL
 const createImageElement = (dataUrl: string): Promise<HTMLImageElement> => {
@@ -60,20 +75,39 @@ const createImageElement = (dataUrl: string): Promise<HTMLImageElement> => {
   });
 };
 
-// This function now runs image classification using TensorFlow.js and MobileNet
+// This function runs image classification using TensorFlow.js and MobileNet
 export const classifyImage = async (dataUrl: string): Promise<Prediction[]> => {
   try {
-    const model = await getModel();
+    const model = await getClassificationModel();
     const imageElement = await createImageElement(dataUrl);
-    const tfPredictions = await model.classify(imageElement);
-    // The output format is { className: string, probability: number }
-    // We need to map it to our Prediction type: { label: string, score: number }
-    return tfPredictions.map(p => ({
-      label: p.className.split(', ')[0], // Get the primary label
+
+    const predictions = await model.classify(imageElement);
+
+    return predictions.map((p: { className: string, probability: number }) => ({
+      label: p.className.split(', ')[0], // Get primary label
       score: p.probability,
     }));
+
   } catch (error) {
-    console.error('Error during image classification:', error);
+    console.error('Error during image classification with MobileNet:', error);
     throw error; // Re-throw to be caught by the caller
   }
 };
+
+// This function runs object detection using COCO-SSD
+export const detectObjects = async (dataUrl: string): Promise<Prediction[]> => {
+  try {
+    const model = await getDetectionModel();
+    const imageElement = await createImageElement(dataUrl);
+
+    const detections = await model.detect(imageElement);
+
+    return detections.map((detection: { class: string; score: number }) => ({
+      label: detection.class,
+      score: detection.score,
+    }));
+  } catch (error) {
+    console.error('Error during object detection with COCO-SSD:', error);
+    throw error;
+  }
+}

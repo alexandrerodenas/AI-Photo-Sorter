@@ -1,4 +1,3 @@
-
 export enum PhotoStatus {
   QUEUED = 'QUEUED',
   ANALYZING = 'ANALYZING',
@@ -17,7 +16,8 @@ export interface Photo {
   binary: string; // base64 encoded string
   objectURL: string; // blob url for efficient rendering
   status: PhotoStatus;
-  predictions: Prediction[];
+  classifications: Prediction[];
+  detections: Prediction[];
   selected: boolean;
 }
 
@@ -29,7 +29,8 @@ export interface FilterRule {
 
 export interface UserProfile {
   firstName: string;
-  rules: FilterRule[];
+  classificationRules: FilterRule[];
+  detectionRules: FilterRule[];
   autoApplyRules: boolean;
   unknownThreshold?: number; // 0-50, percentage for classifying photos as 'Uncategorized'
 }

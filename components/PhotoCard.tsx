@@ -38,9 +38,9 @@ function PhotoCard({ photo, onSelect, onView }: PhotoCardProps) {
     }
   };
 
-  // Find the prediction with the highest score
-  const topPrediction = photo.status === PhotoStatus.ANALYZED && photo.predictions.length > 0
-      ? photo.predictions.reduce((max, p) => p.score > max.score ? p : max, photo.predictions[0])
+  // Find the prediction with the highest score from classifications
+  const topClassification = photo.status === PhotoStatus.ANALYZED && photo.classifications.length > 0
+      ? photo.classifications.reduce((max, p) => p.score > max.score ? p : max, photo.classifications[0])
       : null;
 
   return (
@@ -62,16 +62,16 @@ function PhotoCard({ photo, onSelect, onView }: PhotoCardProps) {
         <StatusPill status={photo.status} />
 
         <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/70 to-transparent">
-          {topPrediction && (
+          {topClassification && (
               <div className="flex items-center justify-between text-white mb-1">
                 <div className="flex items-center gap-1.5 overflow-hidden">
                   <Tag className="w-3 h-3 text-white/90 shrink-0" />
-                  <p className="text-sm font-bold capitalize truncate" title={topPrediction.label}>
-                    {topPrediction.label}
+                  <p className="text-sm font-bold capitalize truncate" title={topClassification.label}>
+                    {topClassification.label}
                   </p>
                 </div>
                 <span className="text-xs font-mono bg-white/20 px-1.5 py-0.5 rounded-full">
-                        {`${(topPrediction.score * 100).toFixed(0)}%`}
+                        {`${(topClassification.score * 100).toFixed(0)}%`}
                     </span>
               </div>
           )}

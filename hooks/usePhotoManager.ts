@@ -34,7 +34,7 @@ declare global {
 // --- End of File System Access API type definitions ---
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import type { UserProfile, Photo, FilterRule } from '../services/types.ts';
+import type { UserProfile, Photo, FilterRule, Prediction } from '../services/types.ts';
 import { PhotoStatus } from '../services/types.ts';
 import * as api from '../services/api.ts';
 
@@ -59,16 +59,6 @@ async function deleteFileByPath(dirHandle: FileSystemDirectoryHandle, path: stri
     }
 }
 
-// Helper hook to get the previous value of a prop or state.
-function usePrevious<T>(value: T): T | undefined {
-    const ref = useRef<T | undefined>(undefined);
-    useEffect(() => {
-        ref.current = value;
-    }, [value]);
-    return ref.current;
-}
-
-
 export const usePhotoManager = (userProfile: UserProfile) => {
     const [photos, setPhotos] = useState<Map<string, Photo>>(new Map());
     const [statusMessage, setStatusMessage] = useState<string>('Ready to sort some photos! 🥳');
@@ -81,7 +71,6 @@ export const usePhotoManager = (userProfile: UserProfile) => {
     const directoryHandleRef = useRef<FileSystemDirectoryHandle | null>(null);
     const photosRef = useRef(photos);
     const userProfileRef = useRef(userProfile);
-    const prevUserProfile = usePrevious(userProfile);
 
     useEffect(() => {
         photosRef.current = photos;
@@ -102,14 +91,12 @@ export const usePhotoManager = (userProfile: UserProfile) => {
     const allAvailableLabels = useMemo(() => {
         const labels = new Set<string>();
         for (const photo of photos.values()) {
-            if (photo.status === PhotoStatus.ANALYZED) {
-                for (const prediction of photo.predictions) {
-                    const capitalizedLabel = prediction.label.charAt(0).toUpperCase() + prediction.label.slice(1);
-                    labels.add(capitalizedLabel);
-                }
+            if (photo.status === PhotoStatus.ANALYZED || photo.status === PhotoStatus.UNCATEGORIZED) {
+                photo.classifications.forEach(c => labels.add(c.label.toLowerCase()));
+                photo.detections.forEach(d => labels.add(d.label.toLowerCase()));
             }
         }
-        return Array.from(labels).sort((a, b) => a.localeCompare(b));
+        return Array.from(labels).sort();
     }, [photos]);
 
     const selectedPhotos = useMemo(() => Array.from(photos.values()).filter(p => p.selected), [photos]);
@@ -133,54 +120,10 @@ export const usePhotoManager = (userProfile: UserProfile) => {
         }
     }, [analysisProgress, isLoading]);
 
-    // Effect to re-calculate photo statuses when the unknown threshold changes
-    useEffect(() => {
-        if (!prevUserProfile || photos.size === 0) {
-            return;
-        }
-
-        const newThreshold = userProfile.unknownThreshold ?? 10;
-        const oldThreshold = prevUserProfile.unknownThreshold ?? 10;
-
-        if (newThreshold !== oldThreshold) {
-            setStatusMessage('Recalculating photo statuses based on new threshold...');
-
-            setPhotos(prevPhotos => {
-                const newPhotos = new Map(prevPhotos);
-                let changedCount = 0;
-
-                for (const [id, photo] of newPhotos.entries()) {
-                    // Only re-evaluate photos that have been previously analyzed or deemed uncategorized.
-                    if (photo.status === PhotoStatus.ANALYZED || photo.status === PhotoStatus.UNCATEGORIZED) {
-                        const { predictions } = photo;
-                        const allScoresBelowThreshold = predictions.length > 0 && predictions.every(p => (p.score * 100) < newThreshold);
-                        const noPredictionsFound = predictions.length === 0;
-                        const isUncategorized = allScoresBelowThreshold || noPredictionsFound;
-
-                        const newStatus = isUncategorized ? PhotoStatus.UNCATEGORIZED : PhotoStatus.ANALYZED;
-
-                        if (photo.status !== newStatus) {
-                            newPhotos.set(id, { ...photo, status: newStatus });
-                            changedCount++;
-                        }
-                    }
-                }
-
-                if (changedCount > 0) {
-                    const s = changedCount === 1 ? '' : 's';
-                    setStatusMessage(`Updated ${changedCount} photo status${s} based on the new threshold. ✅`);
-                } else {
-                    setStatusMessage('Profile updated. No photo statuses needed to change. ✅');
-                }
-                return newPhotos;
-            });
-        }
-    }, [userProfile, prevUserProfile, photos.size, setStatusMessage]);
-
-
-    const applyFilterRules = useCallback((photo: Photo, rules: FilterRule[]): boolean => {
+    const applyRules = useCallback((predictions: Prediction[], rules: FilterRule[]): boolean => {
+        if (!rules || rules.length === 0) return false;
         for (const rule of rules) {
-            const photoPrediction = photo.predictions.find(p => p.label.toLowerCase().includes(rule.label.toLowerCase()));
+            const photoPrediction = predictions.find(p => p.label.toLowerCase().includes(rule.label.toLowerCase()));
             if (photoPrediction && (photoPrediction.score * 100) >= rule.confidence) {
                 return true;
             }
@@ -191,7 +134,11 @@ export const usePhotoManager = (userProfile: UserProfile) => {
     const analyzePhoto = useCallback(async (photoId: string, dataUrl: string) => {
         setPhotos(prev => new Map(prev).set(photoId, { ...prev.get(photoId)!, status: PhotoStatus.ANALYZING }));
         try {
-            const predictions = await api.classifyImage(dataUrl);
+            // Run classification and detection in parallel
+            const [classifications, detections] = await Promise.all([
+                api.classifyImage(dataUrl),
+                api.detectObjects(dataUrl)
+            ]);
 
             // After the first successful analysis, get the backend name to display in the UI.
             if (!tfBackend) {
@@ -199,9 +146,10 @@ export const usePhotoManager = (userProfile: UserProfile) => {
             }
 
             const threshold = userProfileRef.current.unknownThreshold ?? 10;
-            const allScoresBelowThreshold = predictions.length > 0 && predictions.every(p => (p.score * 100) < threshold);
-            const noPredictionsFound = predictions.length === 0;
-            const isUncategorized = allScoresBelowThreshold || noPredictionsFound;
+            const allScoresBelowThreshold = classifications.length > 0 && classifications.every(p => (p.score * 100) < threshold);
+            const noClassificationsFound = classifications.length === 0;
+            // The "Uncategorized" status is based purely on classification results, as requested.
+            const isUncategorized = allScoresBelowThreshold || noClassificationsFound;
 
             setPhotos(prev => {
                 const newPhotos = new Map(prev);
@@ -209,12 +157,18 @@ export const usePhotoManager = (userProfile: UserProfile) => {
                 if (currentPhoto) {
                     const finalStatus = isUncategorized ? PhotoStatus.UNCATEGORIZED : PhotoStatus.ANALYZED;
 
-                    const updatedPhoto = { ...currentPhoto, status: finalStatus, predictions: predictions };
+                    const updatedPhoto = {
+                        ...currentPhoto,
+                        status: finalStatus,
+                        classifications: classifications,
+                        detections: detections
+                    };
 
-                    // Only apply auto-selection rules to clearly analyzed photos
+                    // Auto-apply rules if enabled
                     if (updatedPhoto.status === PhotoStatus.ANALYZED && userProfileRef.current.autoApplyRules) {
-                        const matchesRule = applyFilterRules(updatedPhoto, userProfileRef.current.rules);
-                        if (matchesRule) {
+                        const classificationMatches = applyRules(updatedPhoto.classifications, userProfileRef.current.classificationRules);
+                        const detectionMatches = applyRules(updatedPhoto.detections, userProfileRef.current.detectionRules);
+                        if (classificationMatches || detectionMatches) {
                             updatedPhoto.selected = true;
                         }
                     }
@@ -224,11 +178,11 @@ export const usePhotoManager = (userProfile: UserProfile) => {
             });
         } catch (error) {
             console.error(`Failed to analyze ${photoId}:`, error);
-            setPhotos(prev => new Map(prev).set(photoId, { ...prev.get(photoId)!, status: PhotoStatus.ERROR }));
+            setPhotos(prev => new Map(prev).set(photoId, { ...prev.get(photoId)!, status: PhotoStatus.ERROR, classifications: [], detections: [] }));
         } finally {
             setAnalysisProgress(prev => ({ ...prev, processed: prev.processed + 1 }));
         }
-    }, [applyFilterRules, tfBackend]);
+    }, [applyRules, tfBackend]);
 
     const handleLoadPhotos = useCallback(async () => {
         if (!isApiSupported) {
@@ -276,7 +230,8 @@ export const usePhotoManager = (userProfile: UserProfile) => {
                     binary: '', // Will be loaded on demand for analysis
                     objectURL,
                     status: PhotoStatus.QUEUED,
-                    predictions: [],
+                    classifications: [],
+                    detections: [],
                     selected: false,
                 });
             }
@@ -363,7 +318,9 @@ export const usePhotoManager = (userProfile: UserProfile) => {
 
         const photosToSelectIds: string[] = [];
         for (const photo of photosToProcess) {
-            if (applyFilterRules(photo, userProfileRef.current.rules)) {
+            const classificationMatches = applyRules(photo.classifications, userProfileRef.current.classificationRules);
+            const detectionMatches = applyRules(photo.detections, userProfileRef.current.detectionRules);
+            if (classificationMatches || detectionMatches) {
                 photosToSelectIds.push(photo.id);
             }
         }
@@ -394,7 +351,7 @@ export const usePhotoManager = (userProfile: UserProfile) => {
             const were = photosToSelectIds.length === 1 ? 'was' : 'were';
             setStatusMessage(`All ${photosToSelectIds.length} photo${s} matching your rules ${were} already selected.`);
         }
-    }, [applyFilterRules]);
+    }, [applyRules]);
 
     const handleSelectAll = useCallback((filterLabel: string) => {
         let photosToProcess = Array.from(photosRef.current.values()).filter(p => p.status === PhotoStatus.ANALYZED);
@@ -402,7 +359,8 @@ export const usePhotoManager = (userProfile: UserProfile) => {
         if (filterLabel.trim()) {
             const lowercasedFilter = filterLabel.toLowerCase().trim();
             photosToProcess = photosToProcess.filter(p =>
-                p.predictions.some(pred => pred.label.toLowerCase().includes(lowercasedFilter))
+                p.classifications.some(pred => pred.label.toLowerCase().includes(lowercasedFilter)) ||
+                p.detections.some(pred => pred.label.toLowerCase().includes(lowercasedFilter))
             );
         }
 
@@ -443,7 +401,8 @@ export const usePhotoManager = (userProfile: UserProfile) => {
             const lowercasedFilter = filterLabel.toLowerCase().trim();
             photosToClear = photosToClear.filter(p =>
                 p.status === PhotoStatus.ANALYZED &&
-                p.predictions.some(pred => pred.label.toLowerCase().includes(lowercasedFilter))
+                (p.classifications.some(pred => pred.label.toLowerCase().includes(lowercasedFilter)) ||
+                    p.detections.some(pred => pred.label.toLowerCase().includes(lowercasedFilter)))
             );
         }
 

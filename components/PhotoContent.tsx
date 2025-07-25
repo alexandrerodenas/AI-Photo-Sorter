@@ -1,5 +1,3 @@
-
-
 import React, { useState, useMemo } from 'react';
 import type { Photo } from '../services/types.ts';
 import { PhotoStatus } from '../services/types.ts';
@@ -66,7 +64,10 @@ const PhotoContent: React.FC<PhotoContentProps> = ({
     if (!filterLabel.trim()) return photosArray;
     const lowercasedFilter = filterLabel.toLowerCase();
     return photosArray.filter(p =>
-        p.status === PhotoStatus.ANALYZED && p.predictions.some(pred => pred.label.toLowerCase().includes(lowercasedFilter))
+            p.status === PhotoStatus.ANALYZED && (
+                p.classifications.some(pred => pred.label.toLowerCase().includes(lowercasedFilter)) ||
+                p.detections.some(pred => pred.label.toLowerCase().includes(lowercasedFilter))
+            )
     );
   }, [photosToShow, filterLabel]);
 
@@ -115,7 +116,7 @@ const PhotoContent: React.FC<PhotoContentProps> = ({
   }
 
   return (
-      <main className="flex-1 p-6 flex flex-col h-full overflow-hidden">
+      <main className="flex-1 p-6 flex flex-col">
         {photos.size > 0 && !isLoading && (
             <div className="flex justify-end items-center mb-4 flex-shrink-0">
               <div className="flex items-center p-1 bg-gray-200 dark:bg-gray-700 rounded-lg">

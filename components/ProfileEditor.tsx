@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import type { UserProfile } from '../services/types.ts';
-import { Trash2, PlusCircle, Save, Upload, Download } from 'lucide-react';
-import { AutoCompleteInput } from './ui.tsx';
+import { Trash2, PlusCircle, Save, Upload, Download, Bot, Boxes } from 'lucide-react';
+import AutocompleteInput from './AutocompleteInput.tsx';
 
 interface ProfileEditorProps {
   currentProfile: UserProfile;
@@ -13,9 +13,12 @@ interface ProfileEditorProps {
 export const ProfileEditor: React.FC<ProfileEditorProps> = ({ currentProfile, onSave, closeModal, allAvailableLabels }) => {
   const [profile, setProfile] = useState<UserProfile>(() => ({
     ...currentProfile,
+    classificationRules: currentProfile.classificationRules || [],
+    detectionRules: currentProfile.detectionRules || [],
     unknownThreshold: currentProfile.unknownThreshold ?? 10,
   }));
-  const [newRule, setNewRule] = useState({ label: '', confidence: 75 });
+  const [newClassificationRule, setNewClassificationRule] = useState({ label: '', confidence: 75 });
+  const [newDetectionRule, setNewDetectionRule] = useState({ label: '', confidence: 75 });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSave = () => {
@@ -23,26 +26,30 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ currentProfile, on
     closeModal();
   };
 
-  const handleAddRule = () => {
-    if (!newRule.label) return;
-    setProfile(p => ({
-      ...p,
-      rules: [...p.rules, { ...newRule, id: Date.now().toString() }]
-    }));
-    setNewRule({ label: '', confidence: 75 });
+  const handleAddRule = (type: 'classification' | 'detection') => {
+    if (type === 'classification') {
+      if (!newClassificationRule.label) return;
+      setProfile(p => ({
+        ...p,
+        classificationRules: [...p.classificationRules, { ...newClassificationRule, id: Date.now().toString() }]
+      }));
+      setNewClassificationRule({ label: '', confidence: 75 });
+    } else {
+      if (!newDetectionRule.label) return;
+      setProfile(p => ({
+        ...p,
+        detectionRules: [...p.detectionRules, { ...newDetectionRule, id: Date.now().toString() }]
+      }));
+      setNewDetectionRule({ label: '', confidence: 75 });
+    }
   };
 
-  const handleRemoveRule = (id: string) => {
-    setProfile(p => ({...p, rules: p.rules.filter(rule => rule.id !== id)}));
-  };
-
-  const handleRuleConfidenceChange = (id: string, confidence: number) => {
-    setProfile(p => ({
-      ...p,
-      rules: p.rules.map(rule =>
-          rule.id === id ? { ...rule, confidence } : rule
-      ),
-    }));
+  const handleRemoveRule = (id: string, type: 'classification' | 'detection') => {
+    if (type === 'classification') {
+      setProfile(p => ({...p, classificationRules: p.classificationRules.filter(rule => rule.id !== id)}));
+    } else {
+      setProfile(p => ({...p, detectionRules: p.detectionRules.filter(rule => rule.id !== id)}));
+    }
   };
 
   const handleExportProfile = () => {
@@ -80,9 +87,23 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ currentProfile, on
         }
         const importedProfile = JSON.parse(text);
 
+        // --- Start Migration & Validation ---
+        // Handle old format ('rules' property)
+        if (importedProfile.rules && !importedProfile.classificationRules) {
+          importedProfile.classificationRules = importedProfile.rules;
+          delete importedProfile.rules;
+        }
+        // Ensure arrays exist
+        if (!importedProfile.classificationRules) importedProfile.classificationRules = [];
+        if (!importedProfile.detectionRules) importedProfile.detectionRules = [];
+
         // Basic validation
-        if (typeof importedProfile.firstName === 'string' && Array.isArray(importedProfile.rules) && typeof importedProfile.autoApplyRules === 'boolean') {
-          // Also handle optional unknownThreshold on import
+        const isValid = typeof importedProfile.firstName === 'string' &&
+            Array.isArray(importedProfile.classificationRules) &&
+            Array.isArray(importedProfile.detectionRules) &&
+            typeof importedProfile.autoApplyRules === 'boolean';
+
+        if (isValid) {
           const newProfileState = {
             ...importedProfile,
             unknownThreshold: importedProfile.unknownThreshold ?? 10
@@ -92,6 +113,8 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ currentProfile, on
         } else {
           throw new Error("Invalid profile file format.");
         }
+        // --- End Migration & Validation ---
+
       } catch (error) {
         console.error("Failed to import profile:", error);
         alert("Failed to import profile. Please make sure it's a valid JSON file exported from this application.");
@@ -116,6 +139,7 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ currentProfile, on
             accept=".json"
             className="hidden"
         />
+        {/* General Settings */}
         <div>
           <label className="block font-semibold mb-1">First Name</label>
           <input type="text" value={profile.firstName} onChange={e => setProfile({...profile, firstName: e.target.value})} className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-primary"/>
@@ -123,15 +147,15 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ currentProfile, on
         <div>
           <label className="flex items-center gap-2 cursor-pointer">
             <input type="checkbox" checked={profile.autoApplyRules} onChange={e => setProfile({...profile, autoApplyRules: e.target.checked})} className="w-5 h-5 rounded text-primary focus:ring-primary"/>
-            <span>Automatically apply rules on photo load</span>
+            <span>Automatically apply all rules on photo load</span>
           </label>
         </div>
 
-        {/* Unknown Threshold Section */}
+        {/* Uncategorized Rule Section */}
         <div className="space-y-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-          <h3 className="text-lg font-bold">Uncategorized Rule</h3>
+          <h3 className="text-lg font-bold">Uncategorized Rule (Classification-based)</h3>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            If all AI prediction scores for a photo are below this threshold, it will be classified as 'Uncategorized'. This helps filter out ambiguous images.
+            If all AI **classification** scores for a photo are below this threshold, it will be classified as 'Uncategorized'. This helps filter out ambiguous images.
           </p>
           <div>
             <label className="block text-sm font-medium mb-1">Confidence Threshold ({profile.unknownThreshold}%)</label>
@@ -146,60 +170,85 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ currentProfile, on
           </div>
         </div>
 
-        {/* Rules Section */}
+        {/* Classification Rules Section */}
         <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-          <h3 className="text-lg font-bold">Selection Filter Rules</h3>
-          {profile.rules.length === 0 && <p className="text-gray-500 text-sm">No rules defined. Add one below!</p>}
-          <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
-            {profile.rules.map(rule => (
-                <div key={rule.id} className="flex items-center gap-3 p-2 bg-gray-100 dark:bg-gray-700/50 rounded-md text-sm">
-                  <span className="font-semibold px-2 py-1 text-xs rounded-full bg-accent/20 text-accent shrink-0">SELECT</span>
-                  <span className="whitespace-nowrap">if label contains</span>
-                  <span className="font-semibold text-primary truncate" title={rule.label}>{`"${rule.label}"`}</span>
-                  <div className="flex items-center gap-2 ml-auto flex-shrink-0">
-                    <label htmlFor={`confidence-${rule.id}`} className="text-gray-600 dark:text-gray-300">Conf.</label>
-                    <input
-                        type="range"
-                        id={`confidence-${rule.id}`}
-                        min="1"
-                        max="100"
-                        value={rule.confidence}
-                        onChange={(e) => handleRuleConfidenceChange(rule.id, parseInt(e.target.value, 10))}
-                        className="w-24 h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer dark:bg-gray-600"
-                        title={`Confidence: ${rule.confidence}%`}
-                    />
-                    <span className="font-mono text-primary w-12 text-center text-xs">{`> ${rule.confidence}%`}</span>
-                  </div>
-                  <button onClick={() => handleRemoveRule(rule.id)} className="p-1.5 rounded-full hover:bg-red-200/50 dark:hover:bg-red-900/40"><Trash2 className="w-4 h-4 text-red-600"/></button>
+          <h3 className="text-lg font-bold flex items-center gap-2"><Bot className="w-5 h-5 text-secondary"/> Classification Rules</h3>
+          {profile.classificationRules.length === 0 && <p className="text-gray-500 text-sm">No classification rules defined. Add one below!</p>}
+          <div className="space-y-2 max-h-40 overflow-y-auto pr-2">
+            {profile.classificationRules.map(rule => (
+                <div key={rule.id} className="flex items-center gap-2 p-2 bg-gray-100 dark:bg-gray-700/50 rounded-md">
+                  <span className="font-semibold px-2 py-1 text-xs rounded-full bg-primary/20 text-primary">SELECT</span>
+                  <span>if classification contains</span>
+                  <span className="font-semibold text-primary">{`"${rule.label}"`}</span>
+                  <span>with confidence</span>
+                  <span className="font-semibold text-primary">{`> ${rule.confidence}%`}</span>
+                  <button onClick={() => handleRemoveRule(rule.id, 'classification')} className="ml-auto p-1 rounded-full hover:bg-red-200"><Trash2 className="w-4 h-4 text-red-600"/></button>
                 </div>
             ))}
           </div>
-        </div>
-
-        {/* New Rule Form */}
-        <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-          <h3 className="text-lg font-bold">Add New Selection Rule</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
-            <div>
-              <label className="block text-sm font-medium mb-1">Label</label>
-              <AutoCompleteInput
-                  value={newRule.label}
-                  onChange={value => setNewRule({...newRule, label: value})}
-                  suggestions={allAvailableLabels}
-                  placeholder="e.g., person"
-                  inputClassName="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md"
-              />
+          <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
+            <h4 className="font-semibold mb-2">Add New Classification Rule</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+              <div>
+                <label className="block text-sm font-medium mb-1">Label</label>
+                <AutocompleteInput
+                    placeholder="e.g., beach, forest"
+                    value={newClassificationRule.label}
+                    onChange={val => setNewClassificationRule({...newClassificationRule, label: val})}
+                    suggestions={allAvailableLabels}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Confidence ({newClassificationRule.confidence}%)</label>
+                <input type="range" min="1" max="100" value={newClassificationRule.confidence} onChange={e => setNewClassificationRule({...newClassificationRule, confidence: parseInt(e.target.value)})} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-600"/>
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Confidence ({newRule.confidence}%)</label>
-              <input type="range" min="1" max="100" value={newRule.confidence} onChange={e => setNewRule({...newRule, confidence: parseInt(e.target.value, 10)})} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-600"/>
-            </div>
+            <button onClick={() => handleAddRule('classification')} className="mt-4 flex items-center gap-2 px-4 py-2 bg-primary text-white font-semibold rounded-md hover:bg-primary-dark transition text-sm">
+              <PlusCircle className="w-4 h-4"/> Add Classification Rule
+            </button>
           </div>
-          <button onClick={handleAddRule} className="mt-4 flex items-center gap-2 px-4 py-2 bg-accent text-white font-semibold rounded-md hover:bg-accent-dark transition">
-            <PlusCircle className="w-5 h-5"/> Add Rule
-          </button>
         </div>
 
+        {/* Detection Rules Section */}
+        <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <h3 className="text-lg font-bold flex items-center gap-2"><Boxes className="w-5 h-5 text-secondary"/> Object Detection Rules</h3>
+          {profile.detectionRules.length === 0 && <p className="text-gray-500 text-sm">No detection rules defined. Add one below!</p>}
+          <div className="space-y-2 max-h-40 overflow-y-auto pr-2">
+            {profile.detectionRules.map(rule => (
+                <div key={rule.id} className="flex items-center gap-2 p-2 bg-gray-100 dark:bg-gray-700/50 rounded-md">
+                  <span className="font-semibold px-2 py-1 text-xs rounded-full bg-accent/20 text-accent">SELECT</span>
+                  <span>if an object is</span>
+                  <span className="font-semibold text-accent">{`"${rule.label}"`}</span>
+                  <span>with confidence</span>
+                  <span className="font-semibold text-accent">{`> ${rule.confidence}%`}</span>
+                  <button onClick={() => handleRemoveRule(rule.id, 'detection')} className="ml-auto p-1 rounded-full hover:bg-red-200"><Trash2 className="w-4 h-4 text-red-600"/></button>
+                </div>
+            ))}
+          </div>
+          <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
+            <h4 className="font-semibold mb-2">Add New Detection Rule</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+              <div>
+                <label className="block text-sm font-medium mb-1">Object Label</label>
+                <AutocompleteInput
+                    placeholder="e.g., person, car, dog"
+                    value={newDetectionRule.label}
+                    onChange={val => setNewDetectionRule({...newDetectionRule, label: val})}
+                    suggestions={allAvailableLabels}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Confidence ({newDetectionRule.confidence}%)</label>
+                <input type="range" min="1" max="100" value={newDetectionRule.confidence} onChange={e => setNewDetectionRule({...newDetectionRule, confidence: parseInt(e.target.value)})} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-600"/>
+              </div>
+            </div>
+            <button onClick={() => handleAddRule('detection')} className="mt-4 flex items-center gap-2 px-4 py-2 bg-accent text-white font-semibold rounded-md hover:bg-accent-dark transition text-sm">
+              <PlusCircle className="w-4 h-4"/> Add Detection Rule
+            </button>
+          </div>
+        </div>
+
+        {/* Footer Actions */}
         <div className="flex justify-between items-center gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
           <div className="flex gap-2">
             <button onClick={handleImportClick} className="flex items-center gap-2 px-3 py-2 text-sm bg-gray-200 dark:bg-gray-700 font-semibold rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition">

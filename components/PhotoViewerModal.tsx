@@ -1,9 +1,8 @@
-
 import React from 'react';
 import type { Photo } from '../services/types.ts';
 import { PhotoStatus } from '../services/types.ts';
 import { Spinner } from './ui.tsx';
-import { X } from 'lucide-react';
+import { X, Bot, Boxes } from 'lucide-react';
 
 interface PhotoViewerModalProps {
   photo: Photo | null;
@@ -13,7 +12,7 @@ interface PhotoViewerModalProps {
 const PhotoViewerModal: React.FC<PhotoViewerModalProps> = ({ photo, onClose }) => {
   if (!photo) return null;
 
-  const shouldShowPredictions = photo.status === PhotoStatus.ANALYZED || photo.status === PhotoStatus.UNCATEGORIZED;
+  const isAnalysisPending = photo.status === PhotoStatus.ANALYZING || photo.status === PhotoStatus.QUEUED;
 
   return (
       <div className="fixed inset-0 bg-black/70 z-40 flex items-center justify-center" onClick={onClose}>
@@ -25,27 +24,49 @@ const PhotoViewerModal: React.FC<PhotoViewerModalProps> = ({ photo, onClose }) =
             <button onClick={onClose} className="absolute top-3 right-3 p-1.5 bg-gray-200/50 dark:bg-gray-700/50 rounded-full hover:bg-red-500 hover:text-white transition">
               <X className="w-5 h-5"/>
             </button>
-            <h3 className="text-lg font-bold mb-4">AI Predictions</h3>
-            {shouldShowPredictions ? (
-                <ul className="space-y-3">
-                  {photo.predictions.length > 0 ? photo.predictions.map((p, i) => (
-                      <li key={i} className="text-sm">
-                        <div className="flex justify-between items-center mb-1">
-                          <span className="font-semibold capitalize">{p.label}</span>
-                          <span className="font-mono text-xs px-2 py-0.5 bg-primary/20 text-primary rounded-full">{`${(p.score * 100).toFixed(1)}%`}</span>
-                        </div>
-                        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
-                          <div className="bg-primary h-1.5 rounded-full" style={{width: `${p.score * 100}%`}}></div>
-                        </div>
-                      </li>
-                  )) : <p className="text-gray-500">No objects detected.</p>}
-                </ul>
-            ) : (
+            {isAnalysisPending ? (
                 <div className="flex flex-col items-center justify-center h-full text-gray-500">
                   <Spinner className="w-10 h-10 mb-2"/>
                   <p>Analyzing...</p>
                 </div>
+            ) : (
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-lg font-bold mb-3 flex items-center gap-2"><Bot className="w-5 h-5 text-secondary" /> AI Classifications</h3>
+                    <ul className="space-y-3">
+                      {photo.classifications.length > 0 ? photo.classifications.map((p, i) => (
+                          <li key={`class-${i}`} className="text-sm">
+                            <div className="flex justify-between items-center mb-1">
+                              <span className="font-semibold capitalize">{p.label}</span>
+                              <span className="font-mono text-xs px-2 py-0.5 bg-primary/20 text-primary rounded-full">{`${(p.score * 100).toFixed(1)}%`}</span>
+                            </div>
+                            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+                              <div className="bg-primary h-1.5 rounded-full" style={{width: `${p.score * 100}%`}}></div>
+                            </div>
+                          </li>
+                      )) : <p className="text-gray-500 text-sm">No classifications found.</p>}
+                    </ul>
+                  </div>
+
+                  <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <h3 className="text-lg font-bold mb-3 flex items-center gap-2"><Boxes className="w-5 h-5 text-secondary" /> Detected Objects</h3>
+                    <ul className="space-y-3">
+                      {photo.detections.length > 0 ? photo.detections.map((p, i) => (
+                          <li key={`detect-${i}`} className="text-sm">
+                            <div className="flex justify-between items-center mb-1">
+                              <span className="font-semibold capitalize">{p.label}</span>
+                              <span className="font-mono text-xs px-2 py-0.5 bg-accent/20 text-accent rounded-full">{`${(p.score * 100).toFixed(1)}%`}</span>
+                            </div>
+                            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+                              <div className="bg-accent h-1.5 rounded-full" style={{width: `${p.score * 100}%`}}></div>
+                            </div>
+                          </li>
+                      )) : <p className="text-gray-500 text-sm">No objects detected.</p>}
+                    </ul>
+                  </div>
+                </div>
             )}
+
             <div className="mt-auto pt-4">
               <p className="text-xs text-gray-400 truncate" title={photo.id}>{photo.id}</p>
             </div>

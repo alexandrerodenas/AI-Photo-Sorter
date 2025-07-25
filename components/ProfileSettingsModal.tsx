@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import type { UserProfile } from '../services/types.ts';
 import { ProfileEditor } from './ProfileEditor.tsx';
@@ -23,7 +24,7 @@ const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({ isOpen, onC
             <button onClick={onClose} className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600"><X className="w-5 h-5"/></button>
           </div>
           <div className="p-6 overflow-y-auto">
-            <ProfileEditor currentProfile={userProfile} onSave={onSave} closeModal={onClose} allAvailableLabels={allAvailableLabels}/>
+            <ProfileEditor currentProfile={userProfile} onSave={onSave} closeModal={onClose} allAvailableLabels={allAvailableLabels} />
           </div>
         </div>
       </div>

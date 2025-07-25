@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import type { UserProfile } from '../services/types.ts';
 import { Zap, Sparkles, Bot, ShieldCheck, SlidersHorizontal } from 'lucide-react';
@@ -25,9 +24,13 @@ const Onboarding: React.FC<OnboardingProps> = ({ onProfileSave }) => {
     if (firstName.trim()) {
       const newProfile: UserProfile = {
         firstName: firstName.trim(),
-        rules: [
+        classificationRules: [
           {id: '1', label: 'cat', confidence: 80},
           {id: '2', label: 'dog', confidence: 80},
+        ],
+        detectionRules: [
+          {id: '3', label: 'person', confidence: 75},
+          {id: '4', label: 'car', confidence: 75},
         ],
         autoApplyRules: true,
         unknownThreshold: 10,

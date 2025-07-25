@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import type { UserProfile } from './services/types.ts';
 import PhotoSorter from './components/PhotoSorter';
@@ -10,8 +9,20 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const profile = storageService.loadUserProfile();
-    setUserProfile(profile);
+    const loadedProfile = storageService.loadUserProfile();
+
+    // Handle migration from old profile structure for existing users
+    if (loadedProfile) {
+      if ((loadedProfile as any).rules && !loadedProfile.classificationRules) {
+        loadedProfile.classificationRules = (loadedProfile as any).rules;
+        delete (loadedProfile as any).rules;
+      }
+      if (!loadedProfile.detectionRules) {
+        loadedProfile.detectionRules = [];
+      }
+    }
+
+    setUserProfile(loadedProfile);
     setIsLoading(false);
 
     // Set dark mode from system preference
@@ -34,13 +45,13 @@ const App: React.FC = () => {
   }
 
   return (
-      <>
+      <div className="min-h-screen font-sans">
         {userProfile ? (
             <PhotoSorter userProfile={userProfile} onProfileUpdate={handleProfileUpdate} />
         ) : (
             <Onboarding onProfileSave={handleProfileUpdate} />
         )}
-      </>
+      </div>
   );
 };
 
