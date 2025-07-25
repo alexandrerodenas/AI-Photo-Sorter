@@ -16,9 +16,10 @@ interface PhotoGridProps {
   onSelectPhoto: (id: string) => void;
   onViewPhoto: (photo: Photo) => void;
   thumbnailSize: ThumbnailSize;
+  onFilterChange: (label: string) => void;
 }
 
-const PhotoGrid: React.FC<PhotoGridProps> = ({ photos, onSelectPhoto, onViewPhoto, thumbnailSize }) => {
+const PhotoGrid: React.FC<PhotoGridProps> = ({ photos, onSelectPhoto, onViewPhoto, thumbnailSize, onFilterChange }) => {
   const sizeClasses: Record<ThumbnailSize, string> = {
     XS: 'grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 2xl:grid-cols-12',
     S: 'grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-10',
@@ -30,7 +31,7 @@ const PhotoGrid: React.FC<PhotoGridProps> = ({ photos, onSelectPhoto, onViewPhot
   return (
       <div className={`grid ${sizeClasses[thumbnailSize]} gap-4`}>
         {photos.map(photo => (
-            <PhotoCard key={photo.id} photo={photo} onSelect={onSelectPhoto} onView={onViewPhoto} />
+            <PhotoCard key={photo.id} photo={photo} onSelect={onSelectPhoto} onView={onViewPhoto} onFilterChange={onFilterChange} />
         ))}
       </div>
   );
@@ -44,6 +45,7 @@ interface PhotoContentProps {
   onSelectPhoto: (id: string) => void;
   onViewPhoto: (photo: Photo) => void;
   thumbnailSize: ThumbnailSize;
+  onFilterChange: (label: string) => void;
 }
 
 const PhotoContent: React.FC<PhotoContentProps> = ({
@@ -54,6 +56,7 @@ const PhotoContent: React.FC<PhotoContentProps> = ({
                                                      onSelectPhoto,
                                                      onViewPhoto,
                                                      thumbnailSize,
+                                                     onFilterChange,
                                                    }) => {
   const [viewMode, setViewMode] = useState<'grid' | 'folder'>('grid');
 
@@ -120,10 +123,10 @@ const PhotoContent: React.FC<PhotoContentProps> = ({
             </div>
         );
       }
-      return <PhotoGrid photos={filteredPhotosForGrid} onSelectPhoto={onSelectPhoto} onViewPhoto={onViewPhoto} thumbnailSize={thumbnailSize} />;
+      return <PhotoGrid photos={filteredPhotosForGrid} onSelectPhoto={onSelectPhoto} onViewPhoto={onViewPhoto} thumbnailSize={thumbnailSize} onFilterChange={onFilterChange} />;
     }
 
-    return <FolderView photos={photosToShow} onSelectPhoto={onSelectPhoto} onViewPhoto={onViewPhoto} thumbnailSize={thumbnailSize} />;
+    return <FolderView photos={photosToShow} onSelectPhoto={onSelectPhoto} onViewPhoto={onViewPhoto} thumbnailSize={thumbnailSize} onFilterChange={onFilterChange} />;
   }
 
   return (

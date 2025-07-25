@@ -8,9 +8,10 @@ interface PhotoCardProps {
   photo: Photo;
   onSelect: (id: string) => void;
   onView: (photo: Photo) => void;
+  onFilterChange: (label: string) => void;
 }
 
-function PhotoCard({ photo, onSelect, onView }: PhotoCardProps) {
+function PhotoCard({ photo, onSelect, onView, onFilterChange }: PhotoCardProps) {
   const clickTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Cleanup timer on unmount
@@ -37,6 +38,12 @@ function PhotoCard({ photo, onSelect, onView }: PhotoCardProps) {
       }, 250); // 250ms window to detect a double click.
     }
   };
+
+  const handleLabelClick = (e: React.MouseEvent, label: string) => {
+    e.stopPropagation(); // Important: prevent card's single/double click
+    onFilterChange(label);
+  };
+
 
   // Find the prediction with the highest score from classifications
   const topClassification = photo.status === PhotoStatus.ANALYZED && photo.classifications.length > 0
@@ -71,12 +78,16 @@ function PhotoCard({ photo, onSelect, onView }: PhotoCardProps) {
               <div className="mb-1 space-y-1">
                 {topDetection && (
                     <div className="flex items-center justify-between text-white">
-                      <div className="flex items-center gap-1.5 overflow-hidden">
+                      <button
+                          onClick={(e) => handleLabelClick(e, topDetection.label)}
+                          className="flex items-center gap-1.5 overflow-hidden text-left hover:underline focus:outline-none focus:underline"
+                          title={`Filter by "${topDetection.label}"`}
+                      >
                         <Boxes className="w-3 h-3 text-white/90 shrink-0" />
-                        <p className="text-sm font-bold capitalize truncate" title={topDetection.label}>
-                          {topDetection.label}
-                        </p>
-                      </div>
+                        <span className="text-sm font-bold capitalize truncate">
+                                {topDetection.label}
+                            </span>
+                      </button>
                       <span className="text-xs font-mono bg-accent/20 px-1.5 py-0.5 rounded-full">
                             {`${(topDetection.score * 100).toFixed(0)}%`}
                         </span>
@@ -84,12 +95,16 @@ function PhotoCard({ photo, onSelect, onView }: PhotoCardProps) {
                 )}
                 {topClassification && (
                     <div className="flex items-center justify-between text-white">
-                      <div className="flex items-center gap-1.5 overflow-hidden">
+                      <button
+                          onClick={(e) => handleLabelClick(e, topClassification.label)}
+                          className="flex items-center gap-1.5 overflow-hidden text-left hover:underline focus:outline-none focus:underline"
+                          title={`Filter by "${topClassification.label}"`}
+                      >
                         <Tag className="w-3 h-3 text-white/90 shrink-0" />
-                        <p className="text-sm font-bold capitalize truncate" title={topClassification.label}>
-                          {topClassification.label}
-                        </p>
-                      </div>
+                        <span className="text-sm font-bold capitalize truncate">
+                                {topClassification.label}
+                            </span>
+                      </button>
                       <span className="text-xs font-mono bg-white/20 px-1.5 py-0.5 rounded-full">
                             {`${(topClassification.score * 100).toFixed(0)}%`}
                         </span>
