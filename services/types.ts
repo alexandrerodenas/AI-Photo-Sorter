@@ -27,10 +27,13 @@ export interface FilterRule {
   confidence: number; // 0-100
 }
 
+export type ThumbnailSize = 'XS' | 'S' | 'M' | 'L' | 'XL';
+
 export interface UserProfile {
   firstName: string;
   classificationRules: FilterRule[];
   detectionRules: FilterRule[];
   autoApplyRules: boolean;
   unknownThreshold?: number; // 0-50, percentage for classifying photos as 'Uncategorized'
+  thumbnailSize?: ThumbnailSize;
 }

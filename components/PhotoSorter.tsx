@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useMemo } from 'react';
 import type { UserProfile, Photo } from '../services/types.ts';
 import { PhotoStatus } from '../services/types.ts';
@@ -75,6 +76,7 @@ const PhotoSorter: React.FC<PhotoSorterProps> = ({ userProfile, onProfileUpdate 
             onSelectPhoto={handleSelectPhoto}
             onViewPhoto={setViewingPhoto}
             isolateSelection={isolateSelection}
+            thumbnailSize={userProfile.thumbnailSize ?? 'M'}
         />
 
         <PhotoViewerModal

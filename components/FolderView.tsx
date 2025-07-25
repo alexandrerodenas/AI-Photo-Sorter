@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import type { Photo } from '../services/types.ts';
+import type { Photo, ThumbnailSize } from '../services/types.ts';
 import { PhotoStatus } from '../services/types.ts';
 import PhotoCard from './PhotoCard.tsx';
 import { ChevronRight, Folder, ArrowDownAZ, ArrowDown10, Tag, Boxes } from 'lucide-react';
@@ -8,12 +8,29 @@ interface FolderViewProps {
   photos: Map<string, Photo>;
   onSelectPhoto: (id: string) => void;
   onViewPhoto: (photo: Photo) => void;
+  thumbnailSize: ThumbnailSize;
 }
 
-const FolderView: React.FC<FolderViewProps> = ({ photos, onSelectPhoto, onViewPhoto }) => {
+const FolderView: React.FC<FolderViewProps> = ({ photos, onSelectPhoto, onViewPhoto, thumbnailSize }) => {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set([PhotoStatus.ANALYZED, PhotoStatus.UNCATEGORIZED]));
   const [sortOrder, setSortOrder] = useState<'alpha' | 'count'>('alpha');
   const [groupBy, setGroupBy] = useState<'classification' | 'detection'>('classification');
+
+  const sizeClassesAnalyzed: Record<ThumbnailSize, string> = {
+    XS: 'grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-9 2xl:grid-cols-11',
+    S: 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-9',
+    M: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-7',
+    L: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6',
+    XL: 'grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4',
+  };
+
+  const sizeClassesOther: Record<ThumbnailSize, string> = {
+    XS: 'grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 2xl:grid-cols-12',
+    S: 'grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-10',
+    M: 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8',
+    L: 'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6',
+    XL: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5',
+  };
 
   const toggleFolder = (key: string) => {
     setExpandedFolders(prev => {
@@ -187,7 +204,7 @@ const FolderView: React.FC<FolderViewProps> = ({ photos, onSelectPhoto, onViewPh
                                     <span className="text-xs text-gray-500 dark:text-gray-400">({labelPhotos.length})</span>
                                   </div>
                                   {isLabelExpanded && (
-                                      <div className="pl-7 pt-2 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-7 gap-4">
+                                      <div className={`pl-7 pt-2 grid ${sizeClassesAnalyzed[thumbnailSize]} gap-4`}>
                                         {labelPhotos.map(photo => <PhotoCard key={photo.id} photo={photo} onSelect={onSelectPhoto} onView={onViewPhoto} />)}
                                       </div>
                                   )}
@@ -195,7 +212,7 @@ const FolderView: React.FC<FolderViewProps> = ({ photos, onSelectPhoto, onViewPh
                             );
                           })
                       ) : (
-                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-4">
+                          <div className={`grid ${sizeClassesOther[thumbnailSize]} gap-4`}>
                             {(content as Photo[]).map(photo => <PhotoCard key={photo.id} photo={photo} onSelect={onSelectPhoto} onView={onViewPhoto} />)}
                           </div>
                       )}

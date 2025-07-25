@@ -20,6 +20,9 @@ const App: React.FC = () => {
       if (!loadedProfile.detectionRules) {
         loadedProfile.detectionRules = [];
       }
+      if (!loadedProfile.thumbnailSize) {
+        loadedProfile.thumbnailSize = 'M';
+      }
     }
 
     setUserProfile(loadedProfile);

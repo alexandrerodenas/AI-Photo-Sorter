@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import type { UserProfile } from '../services/types.ts';
+import type { UserProfile, ThumbnailSize } from '../services/types.ts';
 import { Trash2, PlusCircle, Save, Upload, Download, Bot, Boxes } from 'lucide-react';
 import AutocompleteInput from './AutocompleteInput.tsx';
 
@@ -17,10 +17,12 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ currentProfile, on
     classificationRules: currentProfile.classificationRules || [],
     detectionRules: currentProfile.detectionRules || [],
     unknownThreshold: currentProfile.unknownThreshold ?? 10,
+    thumbnailSize: currentProfile.thumbnailSize ?? 'M',
   }));
   const [newClassificationRule, setNewClassificationRule] = useState({ label: '', confidence: 75 });
   const [newDetectionRule, setNewDetectionRule] = useState({ label: '', confidence: 75 });
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const thumbnailSizes: ThumbnailSize[] = ['XS', 'S', 'M', 'L', 'XL'];
 
   const handleSave = () => {
     onSave(profile);
@@ -105,9 +107,11 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ currentProfile, on
             typeof importedProfile.autoApplyRules === 'boolean';
 
         if (isValid) {
-          const newProfileState = {
-            ...importedProfile,
-            unknownThreshold: importedProfile.unknownThreshold ?? 10
+          const newProfileState: UserProfile = {
+            ...currentProfile, // a safe base
+            ...importedProfile, // override with imported data
+            unknownThreshold: importedProfile.unknownThreshold ?? 10,
+            thumbnailSize: importedProfile.thumbnailSize ?? 'M'
           };
           setProfile(newProfileState);
           alert("Profile imported successfully! Review the changes and click 'Save Changes' to apply them.");
@@ -145,6 +149,26 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ currentProfile, on
           <label className="block font-semibold mb-1">First Name</label>
           <input type="text" value={profile.firstName} onChange={e => setProfile({...profile, firstName: e.target.value})} className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-primary"/>
         </div>
+
+        <div className="space-y-2">
+          <label className="block font-semibold">Thumbnail Size</label>
+          <div className="flex items-center p-1 bg-gray-200 dark:bg-gray-700 rounded-lg">
+            {thumbnailSizes.map(size => (
+                <button
+                    key={size}
+                    onClick={() => setProfile({ ...profile, thumbnailSize: size })}
+                    className={`flex-1 p-2 rounded-md transition-colors text-sm font-semibold ${
+                        (profile.thumbnailSize || 'M') === size
+                            ? 'bg-white dark:bg-gray-800 text-primary shadow-sm'
+                            : 'text-gray-600 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-gray-800/50'
+                    }`}
+                >
+                  {size}
+                </button>
+            ))}
+          </div>
+        </div>
+
         <div>
           <label className="flex items-center gap-2 cursor-pointer">
             <input type="checkbox" checked={profile.autoApplyRules} onChange={e => setProfile({...profile, autoApplyRules: e.target.checked})} className="w-5 h-5 rounded text-primary focus:ring-primary"/>
