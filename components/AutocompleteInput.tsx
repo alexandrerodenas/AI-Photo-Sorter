@@ -1,4 +1,6 @@
+
 import React, { useState, useEffect, useRef } from 'react';
+import { X } from 'lucide-react';
 
 interface AutocompleteInputProps {
   value: string;
@@ -22,6 +24,7 @@ const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(0);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const suggestionsListRef = useRef<HTMLUListElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -45,6 +48,12 @@ const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
       }
     }
   }, [activeSuggestionIndex, showSuggestions]);
+
+  const handleClear = () => {
+    onChange('');
+    setShowSuggestions(false);
+    inputRef.current?.focus();
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const userInput = e.currentTarget.value;
@@ -77,6 +86,11 @@ const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Escape') {
+      setShowSuggestions(false);
+      return;
+    }
+
     if (!showSuggestions || filteredSuggestions.length === 0) return;
 
     if (e.key === 'Enter') {
@@ -92,9 +106,6 @@ const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
       e.preventDefault();
       setActiveSuggestionIndex(prev => prev < filteredSuggestions.length - 1 ? prev + 1 : filteredSuggestions.length - 1);
     }
-    else if (e.key === 'Escape') {
-      setShowSuggestions(false);
-    }
   };
 
   return (
@@ -102,6 +113,7 @@ const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
         <div className="relative">
           {icon && <div className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400">{icon}</div>}
           <input
+              ref={inputRef}
               type="text"
               value={value}
               onChange={handleChange}
@@ -109,8 +121,18 @@ const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
               onFocus={handleFocus}
               placeholder={placeholder}
               autoComplete="off"
-              className={className || `w-full ${icon ? 'pl-10' : 'pl-3'} pr-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-primary focus:outline-none transition`}
+              className={className || `w-full ${icon ? 'pl-10' : 'pl-3'} ${value ? 'pr-10' : 'pr-3'} py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-primary focus:outline-none transition-all`}
           />
+          {value && (
+              <button
+                  type="button"
+                  onClick={handleClear}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full transition-colors"
+                  aria-label="Clear filter"
+              >
+                <X className="w-4 h-4" />
+              </button>
+          )}
         </div>
         {showSuggestions && filteredSuggestions.length > 0 && (
             <ul ref={suggestionsListRef} className="absolute z-20 w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md mt-1 max-h-60 overflow-y-auto shadow-lg">
