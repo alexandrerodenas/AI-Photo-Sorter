@@ -142,8 +142,11 @@ export const usePhotoManager = (userProfile: UserProfile) => {
         if (!rules || rules.length === 0) return false;
         for (const rule of rules) {
             const photoPrediction = predictions.find(p => p.label.toLowerCase().includes(rule.label.toLowerCase()));
-            if (photoPrediction && (photoPrediction.score * 100) >= rule.confidence) {
-                return true;
+            if (photoPrediction) {
+                // If confidence is undefined, it's a "match-any" rule.
+                if (rule.confidence === undefined || (photoPrediction.score * 100) >= rule.confidence) {
+                    return true;
+                }
             }
         }
         return false;

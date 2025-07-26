@@ -176,7 +176,6 @@ const PhotoSorter: React.FC<PhotoSorterProps> = ({ userProfile, onProfileUpdate 
       const newRule: FilterRule = {
         id: `${Date.now()}-c-${trimmedLabel}`,
         label: trimmedLabel,
-        confidence: 1,
       };
       newProfile.classificationRules.push(newRule);
       ruleAdded = true;
@@ -187,7 +186,6 @@ const PhotoSorter: React.FC<PhotoSorterProps> = ({ userProfile, onProfileUpdate 
       const newRule: FilterRule = {
         id: `${Date.now()}-d-${trimmedLabel}`,
         label: trimmedLabel,
-        confidence: 1,
       };
       newProfile.detectionRules.push(newRule);
       ruleAdded = true;
@@ -195,7 +193,7 @@ const PhotoSorter: React.FC<PhotoSorterProps> = ({ userProfile, onProfileUpdate 
 
     if (ruleAdded) {
       onProfileUpdate(newProfile);
-      setStatusMessage(`Created new rule for "${trimmedLabel}" at 1% confidence.`);
+      setStatusMessage(`Created new rule for "${trimmedLabel}" (any confidence).`);
       setFilterLabel(''); // Clear the input for better UX
     } else {
       setStatusMessage(`Rule for "${trimmedLabel}" already exists.`);

@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import type { UserProfile, ThumbnailSize } from '../services/types.ts';
+import type { UserProfile, ThumbnailSize, FilterRule } from '../services/types.ts';
 import { Trash2, PlusCircle, Save, Upload, Download, Bot, Boxes } from 'lucide-react';
 import AutocompleteInput from './AutocompleteInput.tsx';
 
@@ -20,7 +20,11 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ currentProfile, on
     thumbnailSize: currentProfile.thumbnailSize ?? 'M',
   }));
   const [newClassificationRule, setNewClassificationRule] = useState({ label: '', confidence: 75 });
+  const [isClassificationAnyConfidence, setIsClassificationAnyConfidence] = useState(false);
+
   const [newDetectionRule, setNewDetectionRule] = useState({ label: '', confidence: 75 });
+  const [isDetectionAnyConfidence, setIsDetectionAnyConfidence] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const thumbnailSizes: ThumbnailSize[] = ['XS', 'S', 'M', 'L', 'XL'];
 
@@ -31,19 +35,35 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ currentProfile, on
 
   const handleAddRule = (type: 'classification' | 'detection') => {
     if (type === 'classification') {
-      if (!newClassificationRule.label) return;
+      if (!newClassificationRule.label.trim()) return;
+      const ruleToAdd: FilterRule = {
+        id: Date.now().toString(),
+        label: newClassificationRule.label.trim(),
+      };
+      if (!isClassificationAnyConfidence) {
+        ruleToAdd.confidence = newClassificationRule.confidence;
+      }
       setProfile(p => ({
         ...p,
-        classificationRules: [...p.classificationRules, { ...newClassificationRule, id: Date.now().toString() }]
+        classificationRules: [...p.classificationRules, ruleToAdd]
       }));
       setNewClassificationRule({ label: '', confidence: 75 });
+      setIsClassificationAnyConfidence(false);
     } else {
-      if (!newDetectionRule.label) return;
+      if (!newDetectionRule.label.trim()) return;
+      const ruleToAdd: FilterRule = {
+        id: Date.now().toString(),
+        label: newDetectionRule.label.trim(),
+      };
+      if (!isDetectionAnyConfidence) {
+        ruleToAdd.confidence = newDetectionRule.confidence;
+      }
       setProfile(p => ({
         ...p,
-        detectionRules: [...p.detectionRules, { ...newDetectionRule, id: Date.now().toString() }]
+        detectionRules: [...p.detectionRules, ruleToAdd]
       }));
       setNewDetectionRule({ label: '', confidence: 75 });
+      setIsDetectionAnyConfidence(false);
     }
   };
 
@@ -205,8 +225,14 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ currentProfile, on
                   <span className="font-semibold px-2 py-1 text-xs rounded-full bg-primary/20 text-primary">SELECT</span>
                   <span>if contains</span>
                   <span className="font-semibold text-primary">{`"${rule.label}"`}</span>
-                  <span>with confidence</span>
-                  <span className="font-semibold text-primary">{`> ${rule.confidence}%`}</span>
+                  {rule.confidence !== undefined ? (
+                      <>
+                        <span>with confidence</span>
+                        <span className="font-semibold text-primary">{`> ${rule.confidence}%`}</span>
+                      </>
+                  ) : (
+                      <span className="font-semibold text-primary/90 ml-1">at any confidence</span>
+                  )}
                   <button onClick={() => handleRemoveRule(rule.id, 'classification')} className="ml-auto p-1 rounded-full hover:bg-red-200"><Trash2 className="w-4 h-4 text-red-600"/></button>
                 </div>
             ))}
@@ -223,10 +249,16 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ currentProfile, on
                     suggestions={allAvailableClassificationLabels}
                 />
               </div>
-              <div>
+              <div className={`transition-opacity ${isClassificationAnyConfidence ? 'opacity-50' : ''}`}>
                 <label className="block text-sm font-medium mb-1">Confidence ({newClassificationRule.confidence}%)</label>
-                <input type="range" min="1" max="100" value={newClassificationRule.confidence} onChange={e => setNewClassificationRule({...newClassificationRule, confidence: parseInt(e.target.value)})} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-600"/>
+                <input type="range" min="1" max="100" value={newClassificationRule.confidence} onChange={e => setNewClassificationRule({...newClassificationRule, confidence: parseInt(e.target.value)})} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-600 disabled:cursor-not-allowed" disabled={isClassificationAnyConfidence}/>
               </div>
+            </div>
+            <div className="mt-3">
+              <label className="flex items-center gap-2 cursor-pointer text-sm font-medium">
+                <input type="checkbox" checked={isClassificationAnyConfidence} onChange={e => setIsClassificationAnyConfidence(e.target.checked)} className="w-4 h-4 rounded text-primary focus:ring-primary"/>
+                <span>Apply at any confidence</span>
+              </label>
             </div>
             <button onClick={() => handleAddRule('classification')} className="mt-4 flex items-center gap-2 px-4 py-2 bg-primary text-white font-semibold rounded-md hover:bg-primary-dark transition text-sm">
               <PlusCircle className="w-4 h-4"/> Add Classification Rule
@@ -244,8 +276,14 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ currentProfile, on
                   <span className="font-semibold px-2 py-1 text-xs rounded-full bg-accent/20 text-accent">SELECT</span>
                   <span>if an object is</span>
                   <span className="font-semibold text-accent">{`"${rule.label}"`}</span>
-                  <span>with confidence</span>
-                  <span className="font-semibold text-accent">{`> ${rule.confidence}%`}</span>
+                  {rule.confidence !== undefined ? (
+                      <>
+                        <span>with confidence</span>
+                        <span className="font-semibold text-accent">{`> ${rule.confidence}%`}</span>
+                      </>
+                  ) : (
+                      <span className="font-semibold text-accent/90 ml-1">at any confidence</span>
+                  )}
                   <button onClick={() => handleRemoveRule(rule.id, 'detection')} className="ml-auto p-1 rounded-full hover:bg-red-200"><Trash2 className="w-4 h-4 text-red-600"/></button>
                 </div>
             ))}
@@ -262,10 +300,16 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ currentProfile, on
                     suggestions={allAvailableDetectionLabels}
                 />
               </div>
-              <div>
+              <div className={`transition-opacity ${isDetectionAnyConfidence ? 'opacity-50' : ''}`}>
                 <label className="block text-sm font-medium mb-1">Confidence ({newDetectionRule.confidence}%)</label>
-                <input type="range" min="1" max="100" value={newDetectionRule.confidence} onChange={e => setNewDetectionRule({...newDetectionRule, confidence: parseInt(e.target.value)})} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-600"/>
+                <input type="range" min="1" max="100" value={newDetectionRule.confidence} onChange={e => setNewDetectionRule({...newDetectionRule, confidence: parseInt(e.target.value)})} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-600 disabled:cursor-not-allowed" disabled={isDetectionAnyConfidence}/>
               </div>
+            </div>
+            <div className="mt-3">
+              <label className="flex items-center gap-2 cursor-pointer text-sm font-medium">
+                <input type="checkbox" checked={isDetectionAnyConfidence} onChange={e => setIsDetectionAnyConfidence(e.target.checked)} className="w-4 h-4 rounded text-accent focus:ring-accent"/>
+                <span>Apply at any confidence</span>
+              </label>
             </div>
             <button onClick={() => handleAddRule('detection')} className="mt-4 flex items-center gap-2 px-4 py-2 bg-accent text-white font-semibold rounded-md hover:bg-accent-dark transition text-sm">
               <PlusCircle className="w-4 h-4"/> Add Detection Rule

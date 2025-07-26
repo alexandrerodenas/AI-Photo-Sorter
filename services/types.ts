@@ -24,7 +24,7 @@ export interface Photo {
 export interface FilterRule {
   id: string;
   label: string;
-  confidence: number; // 0-100
+  confidence?: number; // 0-100, optional
 }
 
 export type ThumbnailSize = 'XS' | 'S' | 'M' | 'L' | 'XL';
