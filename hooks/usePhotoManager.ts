@@ -61,7 +61,7 @@ async function deleteFileByPath(dirHandle: FileSystemDirectoryHandle, path: stri
 
 export const usePhotoManager = (userProfile: UserProfile) => {
     const [photos, setPhotos] = useState<Map<string, Photo>>(new Map());
-    const [statusMessage, setStatusMessage] = useState<string>('Ready to sort some photos! 🥳');
+    const [statusMessage, setStatusMessage] = useState<string>('Ready to organize some photos! 🥳');
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [analysisProgress, setAnalysisProgress] = useState({ processed: 0, total: 0 });
     const [isApiSupported, setIsApiSupported] = useState(true);
@@ -461,5 +461,6 @@ export const usePhotoManager = (userProfile: UserProfile) => {
         allAvailableClassificationLabels,
         allAvailableDetectionLabels,
         modelsLoadState,
+        setStatusMessage,
     };
 };

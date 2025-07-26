@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import type { UserProfile, ModelsLoadState } from '../services/types.ts';
 import {
   FolderOpen,
@@ -11,6 +11,8 @@ import {
   XSquare,
   Eye,
   EyeOff,
+  Wand2,
+  PlusCircle,
 } from 'lucide-react';
 import { Spinner } from './ui.tsx';
 import AutocompleteInput from './AutocompleteInput.tsx';
@@ -37,6 +39,8 @@ interface PhotoSorterSidebarProps {
   onToggleIsolateSelection: () => void;
   allAvailableLabels: string[];
   modelsLoadState: ModelsLoadState;
+  onCreateRuleFromSelection: () => void;
+  onCreateRuleFromFilter: (label: string) => void;
 }
 
 const PhotoSorterSidebar: React.FC<PhotoSorterSidebarProps> = ({
@@ -60,7 +64,18 @@ const PhotoSorterSidebar: React.FC<PhotoSorterSidebarProps> = ({
                                                                  onToggleIsolateSelection,
                                                                  allAvailableLabels,
                                                                  modelsLoadState,
+                                                                 onCreateRuleFromSelection,
+                                                                 onCreateRuleFromFilter,
                                                                }) => {
+
+  const existingRuleLabels = useMemo(() => new Set([
+    ...userProfile.classificationRules.map(r => r.label.toLowerCase()),
+    ...userProfile.detectionRules.map(r => r.label.toLowerCase()),
+  ]), [userProfile.classificationRules, userProfile.detectionRules]);
+
+  const trimmedFilterLabel = filterLabel.trim();
+  const showCreateRuleButton = trimmedFilterLabel && !existingRuleLabels.has(trimmedFilterLabel.toLowerCase());
+
   return (
       <aside className="w-80 bg-white dark:bg-gray-800 p-6 flex flex-col shadow-lg shrink-0">
         <div className="flex items-center gap-3 mb-6">
@@ -114,6 +129,16 @@ const PhotoSorterSidebar: React.FC<PhotoSorterSidebarProps> = ({
               onChange={onFilterChange}
               suggestions={allAvailableLabels}
           />
+          {showCreateRuleButton && (
+              <button
+                  onClick={() => onCreateRuleFromFilter(filterLabel)}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2 mt-2 text-sm bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 font-semibold rounded-md hover:bg-blue-200 dark:hover:bg-blue-900/60 transition"
+                  title={`Create new rules for "${trimmedFilterLabel}"`}
+              >
+                <PlusCircle className="w-4 h-4 shrink-0" />
+                <span className="truncate">Create Rule for "{trimmedFilterLabel}"</span>
+              </button>
+          )}
         </div>
 
         {/* Actions */}
@@ -144,9 +169,17 @@ const PhotoSorterSidebar: React.FC<PhotoSorterSidebarProps> = ({
             <Zap className="w-5 h-5"/> Apply Manual Rules
           </button>
           <button
+              onClick={onCreateRuleFromSelection}
+              disabled={selectedPhotoCount === 0}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-accent text-white font-semibold rounded-md hover:bg-accent-dark transition disabled:bg-gray-400/50 disabled:text-white/80 disabled:cursor-not-allowed"
+              title={selectedPhotoCount > 0 ? "Create new rules from selected photos" : "Select photos to create rules from"}
+          >
+            <Wand2 className="w-5 h-5"/> Create Rule from Selection
+          </button>
+          <button
               onClick={onToggleIsolateSelection}
               disabled={selectedPhotoCount === 0 && !isolateSelection}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-accent text-white font-semibold rounded-md hover:bg-accent-dark transition disabled:bg-gray-400/50 disabled:text-white/80 disabled:cursor-not-allowed"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-500 text-white font-semibold rounded-md hover:bg-blue-600 transition disabled:bg-gray-400/50 disabled:text-white/80 disabled:cursor-not-allowed"
               title={isolateSelection ? "Show all photos" : "Show only selected photos"}
           >
             {isolateSelection ? (
