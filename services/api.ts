@@ -1,12 +1,12 @@
 import type { Prediction, ModelsLoadState, ModelLoadStatus } from './types.ts';
-import * as mobilenet from '@tensorflow-models/mobilenet';
 
-// TensorFlow will be loaded dynamically.
-let classificationModelPromise: Promise<any> | null = null; // Will hold a mobilenet.MobileNet
-let detectionModelPromise: Promise<any> | null = null; // Will hold a cocoSsd.ObjectDetection for COCO-SSD
+// TensorFlow and its models will be loaded dynamically.
+let classificationModelPromise: Promise<any> | null = null;
+let detectionModelPromise: Promise<any> | null = null;
 let backendName: string | null = null;
 let tf: any = null;
 let cocoSsd: any = null;
+let mobilenet: any = null;
 
 // --- Model Status Tracking ---
 const modelStatus: ModelsLoadState = {
@@ -30,9 +30,11 @@ const notifySubscribers = () => {
 export const subscribeToModelStatus = (callback: (status: ModelsLoadState) => void) => {
   subscribers.add(callback);
   callback({ ...modelStatus }); // Immediately notify with the current status
+  // The returned cleanup function for useEffect must not return a value.
+  // An arrow function with curly braces `{}` implicitly returns `undefined`.
   return () => {
     subscribers.delete(callback);
-  }; // Return an unsubscribe function
+  };
 };
 // --- End Model Status Tracking ---
 
@@ -41,9 +43,16 @@ export const getTfBackend = (): string | null => backendName;
 
 const initializeTf = async () => {
   if (tf) return;
-  console.log('Dynamically loading TensorFlow.js...');
-  tf = await import('@tensorflow/tfjs');
-  cocoSsd = await import('@tensorflow-models/coco-ssd');
+  console.log('Dynamically loading TensorFlow.js and models...');
+
+  // Load main libraries dynamically and in parallel
+  [tf, cocoSsd, mobilenet] = await Promise.all([
+    import('@tensorflow/tfjs'),
+    import('@tensorflow-models/coco-ssd'),
+    import('@tensorflow-models/mobilenet')
+  ]);
+
+  // Load backends
   await import('@tensorflow/tfjs-backend-webgpu');
   await import('@tensorflow/tfjs-backend-wasm');
   await import('@tensorflow/tfjs-backend-webgl');
