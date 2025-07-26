@@ -1,6 +1,12 @@
-# AI Photo Sorter
+<p align="center">
+  <img src="logo.png" alt="Pixo Logo" width="128">
+</p>
 
-The AI Photo Sorter is a powerful, privacy-focused web application that helps you automatically organize your local photos using artificial intelligence, right in your browser. No uploads, no servers, no data collection—your photos and your data stay on your machine.
+# Pixo
+
+Organize your photos effortlessly.
+
+Pixo is a powerful, privacy-focused web application that helps you automatically organize your local photos using artificial intelligence, right in your browser. No uploads, no servers, no data collection—your photos and your data stay on your machine.
 
 This tool leverages the browser's File System Access API to read your photo directories and uses TensorFlow.js to run two powerful AI models locally for comprehensive image analysis.
 

@@ -9,9 +9,9 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const loadedProfile = storageService.loadUserProfile();
+    let loadedProfile = storageService.loadUserProfile();
 
-    // Handle migration from old profile structure for existing users
+    // Handle migration from legacy profile structure for existing users
     if (loadedProfile) {
       if ((loadedProfile as any).rules && !loadedProfile.classificationRules) {
         loadedProfile.classificationRules = (loadedProfile as any).rules;

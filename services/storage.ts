@@ -1,7 +1,6 @@
-
 import type { UserProfile } from './types.ts';
 
-const PROFILE_KEY = 'photoSorterUserProfile';
+const PROFILE_KEY = 'pixoUserProfile';
 
 export const storageService = {
   saveUserProfile: (profile: UserProfile): void => {

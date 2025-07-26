@@ -62,7 +62,7 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ currentProfile, on
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `photo_sorter_profile_${profile.firstName.toLowerCase().replace(/\s/g, '_')}.json`;
+      a.download = `pixo_profile_${profile.firstName.toLowerCase().replace(/\s/g, '_')}.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);

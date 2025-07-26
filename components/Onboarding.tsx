@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { UserProfile } from '../services/types.ts';
-import { Zap, Sparkles, Bot, ShieldCheck, SlidersHorizontal } from 'lucide-react';
+import { Zap, Bot, ShieldCheck, SlidersHorizontal } from 'lucide-react';
 
 interface OnboardingProps {
   onProfileSave: (profile: UserProfile) => void;
@@ -46,13 +46,15 @@ const Onboarding: React.FC<OnboardingProps> = ({ onProfileSave }) => {
 
           {/* Hero Section */}
           <div className="max-w-4xl mx-auto mb-16">
-            <div className="flex justify-center items-center mb-4">
-              <Sparkles className="w-16 h-16 text-primary" />
+            <div className="flex justify-center items-center mb-6">
+              <img src="/logo.png" alt="Pixo Logo" className="w-24 h-24" />
             </div>
             <h1 className="text-4xl md:text-6xl font-bold text-primary dark:text-primary-light mb-4 leading-tight">
-              AI-Powered Photo Sorting, Simplified.
+              Welcome to Pixo
             </h1>
             <p className="text-lg md:text-xl text-gray-600 dark:text-gray-300 mb-12">
+              Organize your photos effortlessly.
+              <br/>
               Automatically categorize your local photos with powerful AI, right in your browser.
               <br/>
               No uploads, total privacy.
@@ -91,7 +93,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ onProfileSave }) => {
                   type="submit"
                   className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary-dark text-white font-bold py-3 px-4 rounded-lg transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-light"
               >
-                Start Sorting <Zap className="w-5 h-5" />
+                Start Organizing <Zap className="w-5 h-5" />
               </button>
             </form>
           </div>

@@ -1,6 +1,7 @@
+
 {
-  "name": "AI Photo Sorter",
-  "description": "An intelligent web application to automatically sort and manage your photos using semantic search. Describe the photos you're looking for in natural language, and a powerful AI model finds them for you, all running entirely in your browser. Your photos are never uploaded, ensuring complete privacy.",
+  "name": "Pixo",
+  "description": "Organize your photos effortlessly",
   "requestFramePermissions": [],
   "prompt": ""
 }

@@ -3,11 +3,9 @@ import type { UserProfile, ModelsLoadState } from '../services/types.ts';
 import {
   FolderOpen,
   Trash2,
-  User,
   Filter,
   Search,
   Zap,
-  Sparkles,
   Settings2,
   CheckSquare,
   XSquare,
@@ -65,23 +63,31 @@ const PhotoSorterSidebar: React.FC<PhotoSorterSidebarProps> = ({
                                                                }) => {
   return (
       <aside className="w-80 bg-white dark:bg-gray-800 p-6 flex flex-col shadow-lg shrink-0">
-        <div className="flex items-center gap-3 mb-8">
-          <Sparkles className="w-8 h-8 text-primary" />
-          <h1 className="text-2xl font-bold">Photo Sorter</h1>
+        <div className="flex items-center gap-3 mb-6">
+          <img src="/logo.png" alt="Pixo Logo" className="w-10 h-10" />
+          <h1 className="text-2xl font-bold tracking-tight">Pixo</h1>
         </div>
 
-        <div className="flex items-center gap-3 mb-6 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
-          <div className="w-10 h-10 bg-primary/20 text-primary flex items-center justify-center rounded-full">
-            <User className="w-6 h-6" />
+        <div
+            role="button"
+            tabIndex={0}
+            aria-label="Open profile settings"
+            onClick={onOpenProfileSettings}
+            onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onOpenProfileSettings()}
+            className="flex items-center justify-between gap-3 mb-8 p-3 bg-gray-100 dark:bg-gray-700/60 rounded-lg cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600/80 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        >
+          <div className="flex items-center gap-3 overflow-hidden">
+            <div className="w-10 h-10 bg-primary text-white flex items-center justify-center rounded-full font-bold text-lg shrink-0">
+              {userProfile.firstName.charAt(0).toUpperCase()}
+            </div>
+            <div className="overflow-hidden">
+              <p className="font-semibold text-gray-800 dark:text-gray-100 truncate" title={userProfile.firstName}>{userProfile.firstName}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">View settings</p>
+            </div>
           </div>
-          <div>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Welcome back,</p>
-            <p className="font-bold text-lg">{userProfile.firstName}! 😊</p>
-          </div>
-          <button onClick={onOpenProfileSettings} className="ml-auto p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition">
-            <Settings2 className="w-5 h-5" />
-          </button>
+          <Settings2 className="w-5 h-5 text-gray-500 dark:text-gray-400 shrink-0" />
         </div>
+
 
         {/* Directory Loader */}
         <div className="mb-6">
