@@ -1,149 +1,49 @@
-// --- File System Access API type definitions for browser compatibility ---
-// This ensures TypeScript can compile features that are present in modern browsers
-// but may not be in the default TypeScript library definitions.
-declare global {
-    interface Window {
-        showDirectoryPicker(options?: any): Promise<FileSystemDirectoryHandle>;
-    }
-
-    interface FileSystemHandle {
-        readonly kind: 'file' | 'directory';
-        readonly name: string;
-    }
-
-    interface FileSystemFileHandle extends FileSystemHandle {
-        readonly kind: 'file';
-        getFile(): Promise<File>;
-        createWritable(): Promise<FileSystemWritableFileStream>;
-    }
-
-    interface FileSystemDirectoryHandle extends FileSystemHandle {
-        readonly kind: 'directory';
-        getDirectoryHandle(name: string, options?: { create?: boolean }): Promise<FileSystemDirectoryHandle>;
-        getFileHandle(name: string, options?: { create?: boolean }): Promise<FileSystemFileHandle>;
-        removeEntry(name: string, options?: { recursive?: boolean }): Promise<void>;
-        resolve(possibleDescendant: FileSystemHandle): Promise<string[] | null>;
-        values(): AsyncIterableIterator<FileSystemFileHandle | FileSystemDirectoryHandle>;
-    }
-
-    // This is a placeholder for FileSystemWritableFileStream to satisfy FileSystemFileHandle.
-    // The app doesn't use its methods, so an empty interface is sufficient.
-    // eslint-disable-next-line @typescript-eslint/no-empty-interface
-    interface FileSystemWritableFileStream extends WritableStream {}
-}
-// --- End of File System Access API type definitions ---
-
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import type { UserProfile, Photo, FilterRule, Prediction, ModelsLoadState } from '../services/types.ts';
+import { useState, useCallback, useMemo, useRef } from 'react';
+import type { UserProfile, Photo, FilterRule, Prediction } from '../services/types.ts';
 import { PhotoStatus } from '../services/types.ts';
-import * as api from '../services/api.ts';
+import { useFileSystem } from './useFileSystem.ts';
+import { usePhotoAnalysis } from './usePhotoAnalysis.ts';
+import { usePhotoSelection } from './usePhotoSelection.ts';
 
-// Helper to recursively delete a file by its relative path from a directory handle
-async function deleteFileByPath(dirHandle: FileSystemDirectoryHandle, path: string): Promise<boolean> {
-    const pathParts = path.split('/');
-    const fileName = pathParts.pop();
-    let currentDirHandle = dirHandle;
 
-    if (!fileName) return false;
-
-    try {
-        // Navigate to the correct subdirectory
-        for (const part of pathParts) {
-            currentDirHandle = await currentDirHandle.getDirectoryHandle(part, { create: false });
-        }
-        await currentDirHandle.removeEntry(fileName);
-        return true;
-    } catch (error) {
-        console.error(`Failed to delete file ${path}:`, error);
-        return false;
-    }
+interface UsePhotoManagerProps {
+    userProfile: UserProfile;
+    onProfileUpdate: (profile: UserProfile) => void;
+    filterLabel: string;
 }
 
-export const usePhotoManager = (userProfile: UserProfile) => {
+export const usePhotoManager = ({ userProfile, onProfileUpdate, filterLabel }: UsePhotoManagerProps) => {
     const [photos, setPhotos] = useState<Map<string, Photo>>(new Map());
     const [statusMessage, setStatusMessage] = useState<string>('Ready to organize some photos! 🥳');
-    const [isLoading, setIsLoading] = useState<boolean>(false);
-    const [analysisProgress, setAnalysisProgress] = useState({ processed: 0, total: 0 });
-    const [isApiSupported, setIsApiSupported] = useState(true);
-    const [tfBackend, setTfBackend] = useState<string | null>(null);
-    const [isolateSelection, setIsolateSelection] = useState<boolean>(false);
-    const [modelsLoadState, setModelsLoadState] = useState<ModelsLoadState>({ classification: 'idle', detection: 'idle' });
-
 
     const directoryHandleRef = useRef<FileSystemDirectoryHandle | null>(null);
-    const photosRef = useRef(photos);
     const userProfileRef = useRef(userProfile);
+    userProfileRef.current = userProfile;
 
-    useEffect(() => {
-        photosRef.current = photos;
-    }, [photos]);
+    // --- Sub-hook for Selection Logic ---
+    const {
+        selectedPhotos,
+        isolateSelection,
+        handleSelectPhoto,
+        handleToggleIsolateSelection,
+        selectAllFiltered,
+        clearSelectionFiltered
+    } = usePhotoSelection(photos, setPhotos, setStatusMessage);
 
-    useEffect(() => {
-        userProfileRef.current = userProfile;
-    }, [userProfile]);
+    // --- Sub-hook for File System Logic ---
+    const {
+        isLoading,
+        isApiSupported,
+        handleLoadPhotos,
+        handleDeleteSelected
+    } = useFileSystem(directoryHandleRef, photos, selectedPhotos, setPhotos, setStatusMessage);
 
-    useEffect(() => {
-        if (!window.showDirectoryPicker) {
-            setIsApiSupported(false);
-            setStatusMessage('Browser not supported. Use Chrome or Edge for directory access.');
-            console.warn("File System Access API (`showDirectoryPicker`) is not supported in this browser.");
-        }
-    }, []);
-
-    // Preload models and subscribe to their loading status
-    useEffect(() => {
-        api.preloadModels();
-        const unsubscribe = api.subscribeToModelStatus(setModelsLoadState);
-        return () => unsubscribe(); // Cleanup on unmount
-    }, []);
-
-    const { allAvailableClassificationLabels, allAvailableDetectionLabels, allAvailableLabels } = useMemo(() => {
-        const classificationLabels = new Set<string>();
-        const detectionLabels = new Set<string>();
-
-        for (const photo of photos.values()) {
-            if (photo.status === PhotoStatus.ANALYZED || photo.status === PhotoStatus.UNCATEGORIZED) {
-                photo.classifications.forEach(c => classificationLabels.add(c.label.toLowerCase()));
-                photo.detections.forEach(d => detectionLabels.add(d.label.toLowerCase()));
-            }
-        }
-
-        const allLabels = new Set([...classificationLabels, ...detectionLabels]);
-
-        return {
-            allAvailableClassificationLabels: Array.from(classificationLabels).sort(),
-            allAvailableDetectionLabels: Array.from(detectionLabels).sort(),
-            allAvailableLabels: Array.from(allLabels).sort()
-        };
-    }, [photos]);
-
-    const selectedPhotos = useMemo(() => Array.from(photos.values()).filter(p => p.selected), [photos]);
-
-    useEffect(() => {
-        // If the selection becomes empty while in isolation mode, turn it off automatically.
-        if (selectedPhotos.length === 0 && isolateSelection) {
-            setIsolateSelection(false);
-        }
-    }, [selectedPhotos.length, isolateSelection]);
-
-    useEffect(() => {
-        if (isLoading && analysisProgress.total > 0) {
-            const { processed, total } = analysisProgress;
-            if (total > 0 && processed < total) {
-                setStatusMessage(`Analyzing... (${processed}/${total})`);
-            } else if (processed === total && total > 0) {
-                setIsLoading(false);
-                setStatusMessage(`Analysis complete! ${total} photos ready. ✅`);
-            }
-        }
-    }, [analysisProgress, isLoading]);
-
+    // --- Rule Application Logic ---
     const applyRules = useCallback((predictions: Prediction[], rules: FilterRule[]): boolean => {
         if (!rules || rules.length === 0) return false;
         for (const rule of rules) {
             const photoPrediction = predictions.find(p => p.label.toLowerCase().includes(rule.label.toLowerCase()));
             if (photoPrediction) {
-                // If confidence is undefined, it's a "match-any" rule.
                 if (rule.confidence === undefined || (photoPrediction.score * 100) >= rule.confidence) {
                     return true;
                 }
@@ -152,231 +52,34 @@ export const usePhotoManager = (userProfile: UserProfile) => {
         return false;
     }, []);
 
-    const analyzePhoto = useCallback(async (photoId: string, dataUrl: string) => {
-        setPhotos(prev => new Map(prev).set(photoId, { ...prev.get(photoId)!, status: PhotoStatus.ANALYZING }));
-        try {
-            // Run classification and detection in parallel
-            const [classifications, detections] = await Promise.all([
-                api.classifyImage(dataUrl),
-                api.detectObjects(dataUrl)
-            ]);
+    // --- Sub-hook for Analysis Logic ---
+    const {
+        tfBackend,
+        modelsLoadState,
+    } = usePhotoAnalysis(photos, setPhotos, userProfileRef, applyRules);
 
-            // After the first successful analysis, get the backend name to display in the UI.
-            if (!tfBackend) {
-                setTfBackend(api.getTfBackend());
-            }
-
-            const threshold = userProfileRef.current.unknownThreshold ?? 10;
-            const allScoresBelowThreshold = classifications.length > 0 && classifications.every(p => (p.score * 100) < threshold);
-            const noClassificationsFound = classifications.length === 0;
-            // The "Uncategorized" status is based purely on classification results, as requested.
-            const isUncategorized = allScoresBelowThreshold || noClassificationsFound;
-
-            setPhotos(prev => {
-                const newPhotos = new Map(prev);
-                const currentPhoto = newPhotos.get(photoId);
-                if (currentPhoto) {
-                    const finalStatus = isUncategorized ? PhotoStatus.UNCATEGORIZED : PhotoStatus.ANALYZED;
-
-                    const updatedPhoto = {
-                        ...currentPhoto,
-                        status: finalStatus,
-                        classifications: classifications,
-                        detections: detections
-                    };
-
-                    // Auto-apply rules if enabled
-                    if (updatedPhoto.status === PhotoStatus.ANALYZED && userProfileRef.current.autoApplyRules) {
-                        const classificationMatches = applyRules(updatedPhoto.classifications, userProfileRef.current.classificationRules);
-                        const detectionMatches = applyRules(updatedPhoto.detections, userProfileRef.current.detectionRules);
-                        if (classificationMatches || detectionMatches) {
-                            updatedPhoto.selected = true;
-                        }
-                    }
-                    newPhotos.set(photoId, updatedPhoto);
-                }
-                return newPhotos;
-            });
-        } catch (error) {
-            console.error(`Failed to analyze ${photoId}:`, error);
-            setPhotos(prev => new Map(prev).set(photoId, { ...prev.get(photoId)!, status: PhotoStatus.ERROR, classifications: [], detections: [] }));
-        } finally {
-            setAnalysisProgress(prev => ({ ...prev, processed: prev.processed + 1 }));
-        }
-    }, [applyRules, tfBackend]);
-
-    const handleLoadPhotos = useCallback(async () => {
-        if (!isApiSupported) {
-            console.warn("Attempted to load photos, but the File System Access API is not supported.");
-            return;
-        }
-        try {
-            const handle = await window.showDirectoryPicker();
-            directoryHandleRef.current = handle;
-
-            setIsLoading(true);
-            setStatusMessage('Scanning directory...');
-            setPhotos(new Map());
-            setIsolateSelection(false); // Reset isolation on new directory load
-
-            const filesToProcess: {path: string, handle: FileSystemFileHandle}[] = [];
-
-            async function getFilesRecursively(dirHandle: FileSystemDirectoryHandle, path: string) {
-                for await (const entry of dirHandle.values()) {
-                    const newPath = path ? `${path}/${entry.name}` : entry.name;
-                    if (entry.kind === 'file' && entry.name.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
-                        filesToProcess.push({path: newPath, handle: entry});
-                    } else if (entry.kind === 'directory') {
-                        await getFilesRecursively(entry, newPath);
-                    }
-                }
-            }
-            await getFilesRecursively(handle, '');
-
-            if (filesToProcess.length === 0) {
-                setStatusMessage('No photos found in this directory. Try another one!');
-                setIsLoading(false);
-                return;
-            }
-
-            setStatusMessage(`Found ${filesToProcess.length} photos. Loading previews...`);
-            setAnalysisProgress({ processed: 0, total: filesToProcess.length });
-
-            const tempPhotosMap = new Map<string, Photo>();
-            for(const {path, handle} of filesToProcess) {
-                const file = await handle.getFile();
-                const objectURL = URL.createObjectURL(file);
-                tempPhotosMap.set(path, {
-                    id: path,
-                    binary: '', // Will be loaded on demand for analysis
-                    objectURL,
-                    status: PhotoStatus.QUEUED,
-                    classifications: [],
-                    detections: [],
-                    selected: false,
-                });
-            }
-            setPhotos(tempPhotosMap); // Add all photos at once for initial render
-
-            // Start analysis asynchronously
-            for(const {path, handle} of filesToProcess) {
-                const file = await handle.getFile();
-                const reader = new FileReader();
-                reader.onload = () => {
-                    const dataUrl = reader.result as string;
-                    analyzePhoto(path, dataUrl);
-                };
-                reader.readAsDataURL(file);
-            }
-
-        } catch (error) {
-            if ((error as DOMException).name === 'AbortError') {
-                setStatusMessage('Directory selection cancelled.');
-            } else {
-                console.error('Error loading directory:', error);
-                setStatusMessage('Could not load directory. Check console for details.');
-            }
-            setIsLoading(false);
-        }
-    }, [analyzePhoto, isApiSupported]);
-
-    const handleSelectPhoto = useCallback((id: string) => {
-        setPhotos(prev => {
-            const newPhotos = new Map(prev);
-            const photo = newPhotos.get(id);
-            if (!photo) return newPhotos;
-
-            newPhotos.set(id, { ...photo, selected: !photo.selected });
-            return newPhotos;
-        });
-    }, []);
-
-    const handleToggleIsolateSelection = useCallback(() => {
-        // Only allow enabling isolation if photos are selected.
-        // Always allow disabling isolation.
-        if (selectedPhotos.length > 0 || isolateSelection) {
-            setIsolateSelection(prev => !prev);
-        }
-    }, [selectedPhotos.length, isolateSelection]);
-
-    const handleDeleteSelected = useCallback(async () => {
-        if (selectedPhotos.length === 0 || !directoryHandleRef.current) return;
-        const photosToDelete = [...selectedPhotos];
-
-        const confirmation = window.confirm(`Are you sure you want to permanently delete ${photosToDelete.length} photo(s)? This action cannot be undone.`);
-        if (!confirmation) return;
-
-        setStatusMessage(`Deleting ${photosToDelete.length} photos...`);
-
-        // Optimistically remove from UI
-        const newPhotos = new Map(photosRef.current);
-        photosToDelete.forEach(p => newPhotos.delete(p.id));
-        setPhotos(newPhotos);
-
-        let deletedCount = 0;
-        await Promise.all(photosToDelete.map(async (p) => {
-            const success = await deleteFileByPath(directoryHandleRef.current!, p.id);
-            if (success) {
-                URL.revokeObjectURL(p.objectURL); // Clean up blob URL
-                deletedCount++;
-            }
-        }));
-
-        if (deletedCount === photosToDelete.length) {
-            setStatusMessage(`Successfully deleted ${deletedCount} photos. ✅`);
-        } else {
-            setStatusMessage(`Deleted ${deletedCount} of ${photosToDelete.length} photos. Some deletions failed.`);
-            // Potentially add back photos that failed to delete, or prompt user to reload.
-        }
-    }, [selectedPhotos]);
-
-    const handleApplyRulesManually = useCallback(() => {
-        const photosToProcess = Array.from(photosRef.current.values()).filter(p => p.status === PhotoStatus.ANALYZED);
-        if (photosToProcess.length === 0) {
-            setStatusMessage("No analyzed photos to apply rules to.");
-            return;
-        }
-
-        const photosToSelectIds: string[] = [];
-        for (const photo of photosToProcess) {
-            const classificationMatches = applyRules(photo.classifications, userProfileRef.current.classificationRules);
-            const detectionMatches = applyRules(photo.detections, userProfileRef.current.detectionRules);
-            if (classificationMatches || detectionMatches) {
-                photosToSelectIds.push(photo.id);
+    // --- Derived State ---
+    const { allAvailableClassificationLabels, allAvailableDetectionLabels, allAvailableLabels } = useMemo(() => {
+        const classificationLabels = new Set<string>();
+        const detectionLabels = new Set<string>();
+        for (const photo of photos.values()) {
+            if (photo.status === PhotoStatus.ANALYZED || photo.status === PhotoStatus.UNCATEGORIZED) {
+                photo.classifications.forEach(c => classificationLabels.add(c.label.toLowerCase()));
+                photo.detections.forEach(d => detectionLabels.add(d.label.toLowerCase()));
             }
         }
+        const allLabels = new Set([...classificationLabels, ...detectionLabels]);
+        return {
+            allAvailableClassificationLabels: Array.from(classificationLabels).sort(),
+            allAvailableDetectionLabels: Array.from(detectionLabels).sort(),
+            allAvailableLabels: Array.from(allLabels).sort()
+        };
+    }, [photos]);
 
-        if (photosToSelectIds.length === 0) {
-            setStatusMessage("No photos matched your rules. ✨");
-            return;
-        }
 
-        let newlySelectedCount = 0;
-        const newPhotos = new Map(photosRef.current);
-
-        photosToSelectIds.forEach(id => {
-            const photo = newPhotos.get(id);
-            if (photo && !photo.selected) {
-                newPhotos.set(id, { ...photo, selected: true });
-                newlySelectedCount++;
-            }
-        });
-
-        setPhotos(newPhotos);
-
-        if (newlySelectedCount > 0) {
-            const s = newlySelectedCount === 1 ? '' : 's';
-            setStatusMessage(`Selected ${newlySelectedCount} new photo${s} based on your rules.`);
-        } else {
-            const s = photosToSelectIds.length === 1 ? '' : 's';
-            const were = photosToSelectIds.length === 1 ? 'was' : 'were';
-            setStatusMessage(`All ${photosToSelectIds.length} photo${s} matching your rules ${were} already selected.`);
-        }
-    }, [applyRules]);
-
-    const handleSelectAll = useCallback((filterLabel: string) => {
-        let photosToProcess = Array.from(photosRef.current.values()).filter(p => p.status === PhotoStatus.ANALYZED);
-
+    // --- High-level Handlers (combining selection and business logic) ---
+    const handleSelectAll = useCallback(() => {
+        let photosToProcess = Array.from(photos.values()).filter(p => p.status === PhotoStatus.ANALYZED);
         if (filterLabel.trim()) {
             const lowercasedFilter = filterLabel.toLowerCase().trim();
             photosToProcess = photosToProcess.filter(p =>
@@ -384,40 +87,11 @@ export const usePhotoManager = (userProfile: UserProfile) => {
                 p.detections.some(pred => pred.label.toLowerCase().includes(lowercasedFilter))
             );
         }
+        selectAllFiltered(photosToProcess);
+    }, [photos, filterLabel, selectAllFiltered]);
 
-        if (photosToProcess.length === 0) {
-            setStatusMessage("No photos match the current criteria to select.");
-            return;
-        }
-
-        let newlySelectedCount = 0;
-        const newPhotos = new Map(photosRef.current);
-
-        photosToProcess.forEach(photo => {
-            if (!photo.selected) {
-                newPhotos.set(photo.id, { ...photo, selected: true });
-                newlySelectedCount++;
-            }
-        });
-
-        setPhotos(newPhotos);
-
-        if (newlySelectedCount > 0) {
-            const s = newlySelectedCount === 1 ? '' : 's';
-            setStatusMessage(`Selected ${newlySelectedCount} new photo${s}.`);
-        } else {
-            setStatusMessage("All matching photos were already selected.");
-        }
-    }, []);
-
-    const handleClearSelection = useCallback((filterLabel: string) => {
-        let photosToClear = Array.from(photosRef.current.values()).filter(p => p.selected);
-
-        if (photosToClear.length === 0) {
-            setStatusMessage("No photos are currently selected.");
-            return;
-        }
-
+    const handleClearSelection = useCallback(() => {
+        let photosToClear = selectedPhotos;
         if (filterLabel.trim()) {
             const lowercasedFilter = filterLabel.toLowerCase().trim();
             photosToClear = photosToClear.filter(p =>
@@ -426,24 +100,151 @@ export const usePhotoManager = (userProfile: UserProfile) => {
                     p.detections.some(pred => pred.label.toLowerCase().includes(lowercasedFilter)))
             );
         }
+        clearSelectionFiltered(photosToClear);
+    }, [selectedPhotos, filterLabel, clearSelectionFiltered]);
 
-        if (photosToClear.length === 0) {
-            const message = filterLabel.trim()
-                ? "No selected photos match the current filter."
-                : "No photos are currently selected.";
-            setStatusMessage(message);
+    const handleApplyRulesManually = useCallback(() => {
+        const photosToProcess = Array.from(photos.values()).filter(p => p.status === PhotoStatus.ANALYZED);
+        if (photosToProcess.length === 0) {
+            setStatusMessage("No analyzed photos to apply rules to.");
+            return;
+        }
+        const photosToSelect: Photo[] = [];
+        for (const photo of photosToProcess) {
+            const classificationMatches = applyRules(photo.classifications, userProfileRef.current.classificationRules);
+            const detectionMatches = applyRules(photo.detections, userProfileRef.current.detectionRules);
+            if (classificationMatches || detectionMatches) {
+                photosToSelect.push(photo);
+            }
+        }
+        selectAllFiltered(photosToSelect, { isManualApplication: true });
+    }, [photos, applyRules, selectAllFiltered]);
+
+    const handleCreateRuleFromSelection = useCallback(() => {
+        if (selectedPhotos.length === 0) {
+            setStatusMessage("Please select photos to create rules from.");
             return;
         }
 
-        const newPhotos = new Map(photosRef.current);
-        photosToClear.forEach(photo => {
-            newPhotos.set(photo.id, { ...photo, selected: false });
-        });
+        let newClassificationRules: FilterRule[] = [];
+        let newDetectionRules: FilterRule[] = [];
 
-        setPhotos(newPhotos);
-        const s = photosToClear.length === 1 ? '' : 's';
-        setStatusMessage(`Cleared selection of ${photosToClear.length} photo${s}.`);
-    }, []);
+        const existingClassificationLabels = new Set(userProfileRef.current.classificationRules.map(r => r.label.toLowerCase()));
+        const existingDetectionLabels = new Set(userProfileRef.current.detectionRules.map(r => r.label.toLowerCase()));
+
+        if (selectedPhotos.length === 1) {
+            const photo = selectedPhotos[0];
+            if (photo.classifications.length > 0) {
+                const topClassification = photo.classifications.reduce((max, p) => p.score > max.score ? p : max);
+                if (!existingClassificationLabels.has(topClassification.label.toLowerCase())) {
+                    newClassificationRules.push({
+                        id: `${Date.now()}-c-${topClassification.label}`,
+                        label: topClassification.label,
+                        confidence: Math.max(1, Math.floor(topClassification.score * 100)),
+                    });
+                }
+            }
+            if (photo.detections.length > 0) {
+                const topDetection = photo.detections.reduce((max, p) => p.score > max.score ? p : max);
+                if (!existingDetectionLabels.has(topDetection.label.toLowerCase())) {
+                    newDetectionRules.push({
+                        id: `${Date.now()}-d-${topDetection.label}`,
+                        label: topDetection.label,
+                        confidence: Math.max(1, Math.floor(topDetection.score * 100)),
+                    });
+                }
+            }
+        } else {
+            const commonClassifications = new Map<string, { score: number; originalLabel: string }>(
+                selectedPhotos[0].classifications.map(p => [ p.label.toLowerCase(), { score: p.score, originalLabel: p.label }])
+            );
+            const commonDetections = new Map<string, { score: number; originalLabel: string }>(
+                selectedPhotos[0].detections.map(p => [ p.label.toLowerCase(), { score: p.score, originalLabel: p.label }])
+            );
+
+            for (let i = 1; i < selectedPhotos.length; i++) {
+                const photo = selectedPhotos[i];
+                const photoClassifications = new Map(photo.classifications.map(p => [p.label.toLowerCase(), p.score]));
+                const photoDetections = new Map(photo.detections.map(p => [p.label.toLowerCase(), p.score]));
+                for (const [labelKey, data] of commonClassifications.entries()) {
+                    if (photoClassifications.has(labelKey)) {
+                        data.score = Math.min(data.score, photoClassifications.get(labelKey)!);
+                    } else {
+                        commonClassifications.delete(labelKey);
+                    }
+                }
+                for (const [labelKey, data] of commonDetections.entries()) {
+                    if (photoDetections.has(labelKey)) {
+                        data.score = Math.min(data.score, photoDetections.get(labelKey)!);
+                    } else {
+                        commonDetections.delete(labelKey);
+                    }
+                }
+            }
+
+            for (const [labelKey, data] of commonClassifications.entries()) {
+                if (!existingClassificationLabels.has(labelKey)) {
+                    newClassificationRules.push({
+                        id: `${Date.now()}-c-${labelKey}`,
+                        label: data.originalLabel,
+                        confidence: Math.max(1, Math.floor(data.score * 100)),
+                    });
+                }
+            }
+            for (const [labelKey, data] of commonDetections.entries()) {
+                if (!existingDetectionLabels.has(labelKey)) {
+                    newDetectionRules.push({
+                        id: `${Date.now()}-d-${labelKey}`,
+                        label: data.originalLabel,
+                        confidence: Math.max(1, Math.floor(data.score * 100)),
+                    });
+                }
+            }
+        }
+
+        if (newClassificationRules.length === 0 && newDetectionRules.length === 0) {
+            setStatusMessage("No new rules created. Common labels may already have rules.");
+            return;
+        }
+
+        const updatedProfile: UserProfile = {
+            ...userProfileRef.current,
+            classificationRules: [...userProfileRef.current.classificationRules, ...newClassificationRules],
+            detectionRules: [...userProfileRef.current.detectionRules, ...newDetectionRules],
+        };
+        onProfileUpdate(updatedProfile);
+        const totalNewRules = newClassificationRules.length + newDetectionRules.length;
+        setStatusMessage(`Added ${totalNewRules} new smart rule(s) from your selection.`);
+    }, [selectedPhotos, onProfileUpdate, setStatusMessage]);
+
+    const handleCreateRuleFromFilter = useCallback((label: string) => {
+        const trimmedLabel = label.trim();
+        if (!trimmedLabel) return;
+        const lowercasedLabel = trimmedLabel.toLowerCase();
+
+        const currentProfile = userProfileRef.current;
+        const newProfile = { ...currentProfile, classificationRules: [...currentProfile.classificationRules], detectionRules: [...currentProfile.detectionRules]};
+        let ruleAdded = false;
+
+        const hasClassificationRule = currentProfile.classificationRules.some(r => r.label.toLowerCase() === lowercasedLabel);
+        if (!hasClassificationRule) {
+            newProfile.classificationRules.push({ id: `${Date.now()}-c-${trimmedLabel}`, label: trimmedLabel });
+            ruleAdded = true;
+        }
+
+        const hasDetectionRule = currentProfile.detectionRules.some(r => r.label.toLowerCase() === lowercasedLabel);
+        if (!hasDetectionRule) {
+            newProfile.detectionRules.push({ id: `${Date.now()}-d-${trimmedLabel}`, label: trimmedLabel });
+            ruleAdded = true;
+        }
+
+        if (ruleAdded) {
+            onProfileUpdate(newProfile);
+            setStatusMessage(`Created new rule for "${trimmedLabel}" (any confidence).`);
+        } else {
+            setStatusMessage(`Rule for "${trimmedLabel}" already exists.`);
+        }
+    }, [onProfileUpdate, setStatusMessage]);
 
     return {
         photos,
@@ -464,6 +265,7 @@ export const usePhotoManager = (userProfile: UserProfile) => {
         allAvailableClassificationLabels,
         allAvailableDetectionLabels,
         modelsLoadState,
-        setStatusMessage,
+        handleCreateRuleFromSelection,
+        handleCreateRuleFromFilter,
     };
 };
