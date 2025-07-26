@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import type { UserProfile, ThumbnailSize, FilterRule } from '../services/types.ts';
-import { Trash2, PlusCircle, Save, Upload, Download, Bot, Boxes } from 'lucide-react';
+import { Trash2, PlusCircle, Save, Upload, Download, Bot, Boxes, Pencil, Check, X } from 'lucide-react';
 import AutocompleteInput from './AutocompleteInput.tsx';
 
 interface ProfileEditorProps {
@@ -19,11 +19,17 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ currentProfile, on
     unknownThreshold: currentProfile.unknownThreshold ?? 10,
     thumbnailSize: currentProfile.thumbnailSize ?? 'M',
   }));
+
+  // State for adding new rules
   const [newClassificationRule, setNewClassificationRule] = useState({ label: '', confidence: 75 });
   const [isClassificationAnyConfidence, setIsClassificationAnyConfidence] = useState(false);
 
   const [newDetectionRule, setNewDetectionRule] = useState({ label: '', confidence: 75 });
   const [isDetectionAnyConfidence, setIsDetectionAnyConfidence] = useState(false);
+
+  // State for editing existing rules
+  const [editingRuleId, setEditingRuleId] = useState<string | null>(null);
+  const [editRuleData, setEditRuleData] = useState<{ confidence: number; anyConfidence: boolean }>({ confidence: 75, anyConfidence: false });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const thumbnailSizes: ThumbnailSize[] = ['XS', 'S', 'M', 'L', 'XL'];
@@ -75,6 +81,43 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ currentProfile, on
     }
   };
 
+  const handleStartEdit = (rule: FilterRule) => {
+    setEditingRuleId(rule.id);
+    setEditRuleData({
+      confidence: rule.confidence ?? 75,
+      anyConfidence: rule.confidence === undefined,
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingRuleId(null);
+  };
+
+  const handleSaveEdit = (type: 'classification' | 'detection') => {
+    if (!editingRuleId) return;
+
+    const ruleUpdater = (rules: FilterRule[]) => rules.map(rule => {
+      if (rule.id === editingRuleId) {
+        const updatedRule = { ...rule };
+        if (editRuleData.anyConfidence) {
+          delete updatedRule.confidence;
+        } else {
+          updatedRule.confidence = editRuleData.confidence;
+        }
+        return updatedRule;
+      }
+      return rule;
+    });
+
+    if (type === 'classification') {
+      setProfile(p => ({ ...p, classificationRules: ruleUpdater(p.classificationRules) }));
+    } else {
+      setProfile(p => ({ ...p, detectionRules: ruleUpdater(p.detectionRules) }));
+    }
+
+    setEditingRuleId(null);
+  };
+
   const handleExportProfile = () => {
     try {
       const profileJson = JSON.stringify(profile, null, 2);
@@ -110,17 +153,13 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ currentProfile, on
         }
         const importedProfile = JSON.parse(text);
 
-        // --- Start Migration & Validation ---
-        // Handle old format ('rules' property)
         if (importedProfile.rules && !importedProfile.classificationRules) {
           importedProfile.classificationRules = importedProfile.rules;
           delete importedProfile.rules;
         }
-        // Ensure arrays exist
         if (!importedProfile.classificationRules) importedProfile.classificationRules = [];
         if (!importedProfile.detectionRules) importedProfile.detectionRules = [];
 
-        // Basic validation
         const isValid = typeof importedProfile.firstName === 'string' &&
             Array.isArray(importedProfile.classificationRules) &&
             Array.isArray(importedProfile.detectionRules) &&
@@ -128,8 +167,8 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ currentProfile, on
 
         if (isValid) {
           const newProfileState: UserProfile = {
-            ...currentProfile, // a safe base
-            ...importedProfile, // override with imported data
+            ...currentProfile,
+            ...importedProfile,
             unknownThreshold: importedProfile.unknownThreshold ?? 10,
             thumbnailSize: importedProfile.thumbnailSize ?? 'M'
           };
@@ -138,8 +177,6 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ currentProfile, on
         } else {
           throw new Error("Invalid profile file format.");
         }
-        // --- End Migration & Validation ---
-
       } catch (error) {
         console.error("Failed to import profile:", error);
         alert("Failed to import profile. Please make sure it's a valid JSON file exported from this application.");
@@ -150,7 +187,6 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ currentProfile, on
     };
     reader.readAsText(file);
 
-    // Reset the input value to allow re-importing the same file
     if(event.target) event.target.value = '';
   };
 
@@ -219,21 +255,51 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ currentProfile, on
         <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
           <h3 className="text-lg font-bold flex items-center gap-2"><Bot className="w-5 h-5 text-secondary"/> Classification Rules</h3>
           {profile.classificationRules.length === 0 && <p className="text-gray-500 text-sm">No classification rules defined. Add one below!</p>}
-          <div className="space-y-2 max-h-40 overflow-y-auto pr-2">
+          <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
             {profile.classificationRules.map(rule => (
-                <div key={rule.id} className="flex items-center gap-2 p-2 bg-gray-100 dark:bg-gray-700/50 rounded-md">
-                  <span className="font-semibold px-2 py-1 text-xs rounded-full bg-primary/20 text-primary">SELECT</span>
-                  <span>if contains</span>
-                  <span className="font-semibold text-primary">{`"${rule.label}"`}</span>
-                  {rule.confidence !== undefined ? (
-                      <>
-                        <span>with confidence</span>
-                        <span className="font-semibold text-primary">{`> ${rule.confidence}%`}</span>
-                      </>
+                <div key={rule.id}>
+                  {editingRuleId === rule.id ? (
+                      <div className="p-3 bg-gray-200 dark:bg-gray-900 rounded-lg space-y-3 ring-2 ring-primary">
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Confidence ({editRuleData.confidence}%)</label>
+                          <input type="range" min="1" max="100" value={editRuleData.confidence} onChange={e => setEditRuleData({...editRuleData, confidence: parseInt(e.target.value)})} className="w-full h-2 bg-gray-300 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer disabled:cursor-not-allowed" disabled={editRuleData.anyConfidence}/>
+                        </div>
+                        <label className="flex items-center gap-2 cursor-pointer text-sm font-medium">
+                          <input type="checkbox" checked={editRuleData.anyConfidence} onChange={e => setEditRuleData({...editRuleData, anyConfidence: e.target.checked})} className="w-4 h-4 rounded text-primary focus:ring-primary"/>
+                          <span>Apply at any confidence</span>
+                        </label>
+                        <div className="flex justify-end gap-2 mt-2">
+                          <button onClick={handleCancelEdit} className="p-2 rounded-full hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors">
+                            <X className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+                          </button>
+                          <button onClick={() => handleSaveEdit('classification')} className="p-2 rounded-full hover:bg-green-200 dark:hover:bg-green-800/50 transition-colors">
+                            <Check className="w-5 h-5 text-green-600" />
+                          </button>
+                        </div>
+                      </div>
                   ) : (
-                      <span className="font-semibold text-primary/90 ml-1">at any confidence</span>
+                      <div className="flex items-center gap-2 p-2 bg-gray-100 dark:bg-gray-700/50 rounded-md">
+                        <span className="font-semibold px-2 py-1 text-xs rounded-full bg-primary/20 text-primary">SELECT</span>
+                        <span>if contains</span>
+                        <span className="font-semibold text-primary">{`"${rule.label}"`}</span>
+                        {rule.confidence !== undefined ? (
+                            <>
+                              <span>with confidence</span>
+                              <span className="font-semibold text-primary">{`> ${rule.confidence}%`}</span>
+                            </>
+                        ) : (
+                            <span className="font-semibold text-primary/90 ml-1">at any confidence</span>
+                        )}
+                        <div className="ml-auto flex items-center gap-1">
+                          <button onClick={() => handleStartEdit(rule)} className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                            <Pencil className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                          </button>
+                          <button onClick={() => handleRemoveRule(rule.id, 'classification')} className="p-1.5 rounded-full hover:bg-red-200 dark:hover:bg-red-800/50 transition-colors">
+                            <Trash2 className="w-4 h-4 text-red-600"/>
+                          </button>
+                        </div>
+                      </div>
                   )}
-                  <button onClick={() => handleRemoveRule(rule.id, 'classification')} className="ml-auto p-1 rounded-full hover:bg-red-200"><Trash2 className="w-4 h-4 text-red-600"/></button>
                 </div>
             ))}
           </div>
@@ -270,21 +336,51 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ currentProfile, on
         <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
           <h3 className="text-lg font-bold flex items-center gap-2"><Boxes className="w-5 h-5 text-secondary"/> Object Detection Rules</h3>
           {profile.detectionRules.length === 0 && <p className="text-gray-500 text-sm">No detection rules defined. Add one below!</p>}
-          <div className="space-y-2 max-h-40 overflow-y-auto pr-2">
+          <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
             {profile.detectionRules.map(rule => (
-                <div key={rule.id} className="flex items-center gap-2 p-2 bg-gray-100 dark:bg-gray-700/50 rounded-md">
-                  <span className="font-semibold px-2 py-1 text-xs rounded-full bg-accent/20 text-accent">SELECT</span>
-                  <span>if an object is</span>
-                  <span className="font-semibold text-accent">{`"${rule.label}"`}</span>
-                  {rule.confidence !== undefined ? (
-                      <>
-                        <span>with confidence</span>
-                        <span className="font-semibold text-accent">{`> ${rule.confidence}%`}</span>
-                      </>
+                <div key={rule.id}>
+                  {editingRuleId === rule.id ? (
+                      <div className="p-3 bg-gray-200 dark:bg-gray-900 rounded-lg space-y-3 ring-2 ring-accent">
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Confidence ({editRuleData.confidence}%)</label>
+                          <input type="range" min="1" max="100" value={editRuleData.confidence} onChange={e => setEditRuleData({...editRuleData, confidence: parseInt(e.target.value)})} className="w-full h-2 bg-gray-300 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer disabled:cursor-not-allowed" disabled={editRuleData.anyConfidence}/>
+                        </div>
+                        <label className="flex items-center gap-2 cursor-pointer text-sm font-medium">
+                          <input type="checkbox" checked={editRuleData.anyConfidence} onChange={e => setEditRuleData({...editRuleData, anyConfidence: e.target.checked})} className="w-4 h-4 rounded text-accent focus:ring-accent"/>
+                          <span>Apply at any confidence</span>
+                        </label>
+                        <div className="flex justify-end gap-2 mt-2">
+                          <button onClick={handleCancelEdit} className="p-2 rounded-full hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors">
+                            <X className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+                          </button>
+                          <button onClick={() => handleSaveEdit('detection')} className="p-2 rounded-full hover:bg-green-200 dark:hover:bg-green-800/50 transition-colors">
+                            <Check className="w-5 h-5 text-green-600" />
+                          </button>
+                        </div>
+                      </div>
                   ) : (
-                      <span className="font-semibold text-accent/90 ml-1">at any confidence</span>
+                      <div className="flex items-center gap-2 p-2 bg-gray-100 dark:bg-gray-700/50 rounded-md">
+                        <span className="font-semibold px-2 py-1 text-xs rounded-full bg-accent/20 text-accent">SELECT</span>
+                        <span>if an object is</span>
+                        <span className="font-semibold text-accent">{`"${rule.label}"`}</span>
+                        {rule.confidence !== undefined ? (
+                            <>
+                              <span>with confidence</span>
+                              <span className="font-semibold text-accent">{`> ${rule.confidence}%`}</span>
+                            </>
+                        ) : (
+                            <span className="font-semibold text-accent/90 ml-1">at any confidence</span>
+                        )}
+                        <div className="ml-auto flex items-center gap-1">
+                          <button onClick={() => handleStartEdit(rule)} className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                            <Pencil className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                          </button>
+                          <button onClick={() => handleRemoveRule(rule.id, 'detection')} className="p-1.5 rounded-full hover:bg-red-200 dark:hover:bg-red-800/50 transition-colors">
+                            <Trash2 className="w-4 h-4 text-red-600"/>
+                          </button>
+                        </div>
+                      </div>
                   )}
-                  <button onClick={() => handleRemoveRule(rule.id, 'detection')} className="ml-auto p-1 rounded-full hover:bg-red-200"><Trash2 className="w-4 h-4 text-red-600"/></button>
                 </div>
             ))}
           </div>
