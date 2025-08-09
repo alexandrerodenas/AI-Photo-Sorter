@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import type { UserProfile, Photo, FilterRule, Prediction, ModelsLoadState } from '../services/types.ts';
 import { PhotoStatus } from '../services/types.ts';
 import * as api from '../services/api.ts';
@@ -9,6 +9,7 @@ export const usePhotoAnalysis = (
     setPhotos: React.Dispatch<React.SetStateAction<Map<string, Photo>>>,
     userProfileRef: React.RefObject<UserProfile>,
     applyRules: (predictions: Prediction[], rules: FilterRule[]) => boolean,
+    setStatusMessage: (message: string) => void,
 ) => {
   const [tfBackend, setTfBackend] = useState<string | null>(null);
   const [modelsLoadState, setModelsLoadState] = useState<ModelsLoadState>({ classification: 'idle', detection: 'idle' });

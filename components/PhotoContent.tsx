@@ -9,6 +9,7 @@ import {
   FolderTree,
   EyeOff,
   Filter,
+  Heart,
 } from 'lucide-react';
 
 interface PhotoGridProps {
@@ -17,9 +18,10 @@ interface PhotoGridProps {
   onViewPhoto: (photo: Photo) => void;
   thumbnailSize: ThumbnailSize;
   onFilterChange: (label: string) => void;
+  onToggleSavePhoto: (id: string) => void;
 }
 
-const PhotoGrid: React.FC<PhotoGridProps> = ({ photos, onSelectPhoto, onViewPhoto, thumbnailSize, onFilterChange }) => {
+const PhotoGrid: React.FC<PhotoGridProps> = ({ photos, onSelectPhoto, onViewPhoto, thumbnailSize, onFilterChange, onToggleSavePhoto }) => {
   const sizeClasses: Record<ThumbnailSize, string> = {
     XS: 'grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 2xl:grid-cols-12',
     S: 'grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-10',
@@ -31,7 +33,7 @@ const PhotoGrid: React.FC<PhotoGridProps> = ({ photos, onSelectPhoto, onViewPhot
   return (
       <div className={`grid ${sizeClasses[thumbnailSize]} gap-4`}>
         {photos.map(photo => (
-            <PhotoCard key={photo.id} photo={photo} onSelect={onSelectPhoto} onView={onViewPhoto} onFilterChange={onFilterChange} />
+            <PhotoCard key={photo.id} photo={photo} onSelect={onSelectPhoto} onView={onViewPhoto} onFilterChange={onFilterChange} onToggleSave={onToggleSavePhoto} />
         ))}
       </div>
   );
@@ -42,10 +44,12 @@ interface PhotoContentProps {
   isLoading: boolean;
   filterLabel: string;
   isolateSelection: boolean;
+  isolateSaved: boolean;
   onSelectPhoto: (id: string) => void;
   onViewPhoto: (photo: Photo) => void;
   thumbnailSize: ThumbnailSize;
   onFilterChange: (label: string) => void;
+  onToggleSavePhoto: (id: string) => void;
 }
 
 const PhotoContent: React.FC<PhotoContentProps> = ({
@@ -53,25 +57,40 @@ const PhotoContent: React.FC<PhotoContentProps> = ({
                                                      isLoading,
                                                      filterLabel,
                                                      isolateSelection,
+                                                     isolateSaved,
                                                      onSelectPhoto,
                                                      onViewPhoto,
                                                      thumbnailSize,
                                                      onFilterChange,
+                                                     onToggleSavePhoto,
                                                    }) => {
   const [viewMode, setViewMode] = useState<'grid' | 'folder'>('grid');
 
   const photosToShow = useMemo(() => {
-    if (!isolateSelection) {
-      return photos;
-    }
-    const isolatedMap = new Map<string, Photo>();
-    for (const [id, photo] of photos.entries()) {
-      if (photo.selected) {
-        isolatedMap.set(id, photo);
+    let photosToReturn = photos;
+
+    if (isolateSaved) {
+      const isolatedMap = new Map<string, Photo>();
+      for (const [id, photo] of photosToReturn.entries()) {
+        if (photo.isSaved) {
+          isolatedMap.set(id, photo);
+        }
       }
+      return isolatedMap;
     }
-    return isolatedMap;
-  }, [photos, isolateSelection]);
+
+    if (isolateSelection) {
+      const isolatedMap = new Map<string, Photo>();
+      for (const [id, photo] of photosToReturn.entries()) {
+        if (photo.selected) {
+          isolatedMap.set(id, photo);
+        }
+      }
+      return isolatedMap;
+    }
+
+    return photosToReturn;
+  }, [photos, isolateSelection, isolateSaved]);
 
   const filteredPhotosForGrid = useMemo(() => {
     const photosArray = Array.from(photosToShow.values());
@@ -92,17 +111,26 @@ const PhotoContent: React.FC<PhotoContentProps> = ({
           <div className="flex flex-col items-center justify-center h-full text-center text-gray-500 dark:text-gray-400">
             <FolderOpen className="w-24 h-24 mb-4 text-gray-300 dark:text-gray-600" />
             <h2 className="text-2xl font-semibold">Your workspace is empty</h2>
-            <p className="mt-2 max-w-sm">Click 'Select Directory' on the left to begin your photo sorting adventure!</p>
+            <p className="mt-2 max-w-sm">Click 'Select Directory' on the left to begin your photo organizing adventure!</p>
           </div>
       );
     }
 
     if (photosToShow.size === 0) {
-      const title = isolateSelection ? "No Selected Photos" : "No Matching Photos";
-      const message = isolateSelection
-          ? "You're in isolation mode, but no photos are selected. Clear the isolation to see all photos."
-          : "No photos match the current filter criteria. Try adjusting your search.";
-      const Icon = isolateSelection ? EyeOff : Filter;
+      let title = "No Matching Photos";
+      let message = "No photos match the current criteria. Try adjusting your search.";
+      let Icon = Filter;
+
+      if (isolateSelection) {
+        title = "No Selected Photos";
+        message = "You're in isolation mode, but no photos are selected. Clear the isolation to see all photos.";
+        Icon = EyeOff;
+      } else if (isolateSaved) {
+        title = "No Saved Photos";
+        message = "You're in isolation mode, but no photos are saved. Click the heart on photos to save them.";
+        Icon = Heart;
+      }
+
 
       return (
           <div className="flex flex-col items-center justify-center h-full text-center text-gray-500 dark:text-gray-400">
@@ -123,10 +151,10 @@ const PhotoContent: React.FC<PhotoContentProps> = ({
             </div>
         );
       }
-      return <PhotoGrid photos={filteredPhotosForGrid} onSelectPhoto={onSelectPhoto} onViewPhoto={onViewPhoto} thumbnailSize={thumbnailSize} onFilterChange={onFilterChange} />;
+      return <PhotoGrid photos={filteredPhotosForGrid} onSelectPhoto={onSelectPhoto} onViewPhoto={onViewPhoto} thumbnailSize={thumbnailSize} onFilterChange={onFilterChange} onToggleSavePhoto={onToggleSavePhoto} />;
     }
 
-    return <FolderView photos={photosToShow} onSelectPhoto={onSelectPhoto} onViewPhoto={onViewPhoto} thumbnailSize={thumbnailSize} onFilterChange={onFilterChange} />;
+    return <FolderView photos={photosToShow} onSelectPhoto={onSelectPhoto} onViewPhoto={onViewPhoto} thumbnailSize={thumbnailSize} onFilterChange={onFilterChange} onToggleSave={onToggleSavePhoto} />;
   }
 
   return (

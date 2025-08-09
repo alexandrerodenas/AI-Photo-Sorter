@@ -7,6 +7,7 @@ import PhotoSorterSidebar from './PhotoSorterSidebar.tsx';
 import PhotoContent from './PhotoContent.tsx';
 import PhotoViewerModal from './PhotoViewerModal.tsx';
 import ProfileSettingsModal from './ProfileSettingsModal.tsx';
+import ConfirmDeleteModal from './ConfirmDeleteModal.tsx';
 
 interface PhotoSorterProps {
   userProfile: UserProfile;
@@ -26,7 +27,7 @@ const PhotoSorter: React.FC<PhotoSorterProps> = ({ userProfile, onProfileUpdate 
     handleLoadPhotos,
     handleSelectPhoto,
     selectedPhotos,
-    handleDeleteSelected,
+    handleRequestDelete,
     handleApplyRulesManually,
     handleSelectAll,
     handleClearSelection,
@@ -39,6 +40,15 @@ const PhotoSorter: React.FC<PhotoSorterProps> = ({ userProfile, onProfileUpdate 
     modelsLoadState,
     handleCreateRuleFromSelection,
     handleCreateRuleFromFilter,
+    savedPhotos,
+    handleToggleSavePhoto,
+    isolateSaved,
+    handleToggleIsolateSaved,
+    handleMoveSavedPhotos,
+    confirmDeleteState,
+    handleConfirmDelete,
+    handleConfirmDeleteKeepSaved,
+    handleCancelDelete,
   } = usePhotoManager({ userProfile, onProfileUpdate, filterLabel });
 
 
@@ -59,7 +69,7 @@ const PhotoSorter: React.FC<PhotoSorterProps> = ({ userProfile, onProfileUpdate 
             onSelectAll={handleSelectAll}
             onClearSelection={handleClearSelection}
             onApplyRules={handleApplyRulesManually}
-            onDeleteSelected={handleDeleteSelected}
+            onDeleteSelected={handleRequestDelete}
             selectedPhotoCount={selectedPhotos.length}
             totalPhotoCount={photos.size}
             statusMessage={statusMessage}
@@ -71,6 +81,10 @@ const PhotoSorter: React.FC<PhotoSorterProps> = ({ userProfile, onProfileUpdate 
             modelsLoadState={modelsLoadState}
             onCreateRuleFromSelection={handleCreateRuleFromSelection}
             onCreateRuleFromFilter={handleCreateRuleFromFilter}
+            savedPhotoCount={savedPhotos.length}
+            isolateSaved={isolateSaved}
+            onToggleIsolateSaved={handleToggleIsolateSaved}
+            onMoveSavedPhotos={handleMoveSavedPhotos}
         />
 
         <PhotoContent
@@ -81,12 +95,23 @@ const PhotoSorter: React.FC<PhotoSorterProps> = ({ userProfile, onProfileUpdate 
             onSelectPhoto={handleSelectPhoto}
             onViewPhoto={setViewingPhoto}
             isolateSelection={isolateSelection}
+            isolateSaved={isolateSaved}
             thumbnailSize={userProfile.thumbnailSize ?? 'M'}
+            onToggleSavePhoto={handleToggleSavePhoto}
         />
 
         <PhotoViewerModal
             photo={viewingPhoto}
             onClose={() => setViewingPhoto(null)}
+        />
+
+        <ConfirmDeleteModal
+            isOpen={confirmDeleteState.isOpen}
+            onClose={handleCancelDelete}
+            onConfirm={handleConfirmDelete}
+            onConfirmKeepSaved={handleConfirmDeleteKeepSaved}
+            selectedCount={selectedPhotos.length}
+            savedCount={confirmDeleteState.savedCount}
         />
 
         <ProfileSettingsModal

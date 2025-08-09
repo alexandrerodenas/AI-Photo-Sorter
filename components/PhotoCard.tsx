@@ -2,16 +2,17 @@ import React, { useRef, useEffect } from 'react';
 import type { Photo } from '../services/types.ts';
 import { PhotoStatus } from '../services/types.ts';
 import { StatusPill } from './ui.tsx';
-import { Check, Tag, Boxes } from 'lucide-react';
+import { Check, Tag, Boxes, Heart } from 'lucide-react';
 
 interface PhotoCardProps {
   photo: Photo;
   onSelect: (id: string) => void;
   onView: (photo: Photo) => void;
   onFilterChange: (label: string) => void;
+  onToggleSave: (id: string) => void;
 }
 
-function PhotoCard({ photo, onSelect, onView, onFilterChange }: PhotoCardProps) {
+function PhotoCard({ photo, onSelect, onView, onFilterChange, onToggleSave }: PhotoCardProps) {
   const clickTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Cleanup timer on unmount
@@ -64,14 +65,26 @@ function PhotoCard({ photo, onSelect, onView, onFilterChange }: PhotoCardProps) 
         <div className="absolute inset-0 bg-black/10 group-hover:bg-black/30 transition-opacity duration-300"></div>
 
         {photo.selected && (
-            <div className="absolute inset-0 border-4 border-accent rounded-lg pointer-events-none">
-              <div className="absolute top-2 right-2 bg-accent text-white rounded-full p-1">
-                <Check className="w-4 h-4" />
-              </div>
-            </div>
+            <div className="absolute inset-0 border-4 border-accent rounded-lg pointer-events-none"></div>
         )}
 
         <StatusPill status={photo.status} />
+
+        <div className="absolute top-2 right-2 flex items-center gap-2 z-10">
+          <button
+              onClick={(e) => { e.stopPropagation(); onToggleSave(photo.id); }}
+              className="p-1.5 bg-black/40 rounded-full text-white hover:text-red-400 transition-colors"
+              title={photo.isSaved ? "Unsave photo" : "Save for later"}
+          >
+            <Heart className={`w-4 h-4 transition-all ${photo.isSaved ? 'fill-red-400' : 'fill-transparent'}`} />
+          </button>
+          {photo.selected && (
+              <div className="bg-accent text-white rounded-full p-1">
+                <Check className="w-4 h-4" />
+              </div>
+          )}
+        </div>
+
 
         <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/70 to-transparent">
           {(topDetection || topClassification) && (

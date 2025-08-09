@@ -19,6 +19,7 @@ export interface Photo {
   classifications: Prediction[];
   detections: Prediction[];
   selected: boolean;
+  isSaved?: boolean;
 }
 
 export interface FilterRule {
@@ -43,4 +44,5 @@ export interface UserProfile {
   autoApplyRules: boolean;
   unknownThreshold?: number; // 0-50, percentage for classifying photos as 'Uncategorized'
   thumbnailSize?: ThumbnailSize;
+  savedFolderName?: string;
 }

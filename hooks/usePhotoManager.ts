@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import type { UserProfile, Photo, FilterRule, Prediction } from '../services/types.ts';
 import { PhotoStatus } from '../services/types.ts';
 import { useFileSystem } from './useFileSystem.ts';
@@ -15,6 +15,7 @@ interface UsePhotoManagerProps {
 export const usePhotoManager = ({ userProfile, onProfileUpdate, filterLabel }: UsePhotoManagerProps) => {
     const [photos, setPhotos] = useState<Map<string, Photo>>(new Map());
     const [statusMessage, setStatusMessage] = useState<string>('Ready to organize some photos! 🥳');
+    const [confirmDeleteState, setConfirmDeleteState] = useState<{isOpen: boolean, savedCount: number}>({ isOpen: false, savedCount: 0 });
 
     const directoryHandleRef = useRef<FileSystemDirectoryHandle | null>(null);
     const userProfileRef = useRef(userProfile);
@@ -30,12 +31,16 @@ export const usePhotoManager = ({ userProfile, onProfileUpdate, filterLabel }: U
         clearSelectionFiltered
     } = usePhotoSelection(photos, setPhotos, setStatusMessage);
 
+    const [isolateSaved, setIsolateSaved] = useState(false);
+    const savedPhotos = useMemo(() => Array.from(photos.values()).filter(p => p.isSaved), [photos]);
+
     // --- Sub-hook for File System Logic ---
     const {
         isLoading,
         isApiSupported,
         handleLoadPhotos,
-        handleDeleteSelected
+        handleDeletePhotos,
+        handleMoveSaved
     } = useFileSystem(directoryHandleRef, photos, selectedPhotos, setPhotos, setStatusMessage);
 
     // --- Rule Application Logic ---
@@ -56,7 +61,7 @@ export const usePhotoManager = ({ userProfile, onProfileUpdate, filterLabel }: U
     const {
         tfBackend,
         modelsLoadState,
-    } = usePhotoAnalysis(photos, setPhotos, userProfileRef, applyRules);
+    } = usePhotoAnalysis(photos, setPhotos, userProfileRef, applyRules, setStatusMessage);
 
     // --- Derived State ---
     const { allAvailableClassificationLabels, allAvailableDetectionLabels, allAvailableLabels } = useMemo(() => {
@@ -75,6 +80,69 @@ export const usePhotoManager = ({ userProfile, onProfileUpdate, filterLabel }: U
             allAvailableLabels: Array.from(allLabels).sort()
         };
     }, [photos]);
+
+    const handleToggleSavePhoto = useCallback((id: string) => {
+        setPhotos(prev => {
+            const newPhotos = new Map(prev);
+            const photo = newPhotos.get(id);
+            if (photo) {
+                newPhotos.set(id, { ...photo, isSaved: !photo.isSaved });
+            }
+            return newPhotos;
+        });
+    }, [setPhotos]);
+
+    const handleToggleIsolateSaved = useCallback(() => {
+        if (savedPhotos.length > 0 || isolateSaved) {
+            setIsolateSaved(prev => !prev);
+        }
+    }, [savedPhotos.length, isolateSaved]);
+
+    const handleMoveSavedPhotos = useCallback(() => {
+        handleMoveSaved(savedPhotos, userProfileRef.current.savedFolderName || 'Pixo Saved');
+    }, [savedPhotos, userProfileRef, handleMoveSaved]);
+
+    const handleRequestDelete = useCallback(() => {
+        if (selectedPhotos.length === 0) return;
+
+        const savedInSelection = selectedPhotos.filter(p => p.isSaved);
+
+        if (savedInSelection.length > 0) {
+            setConfirmDeleteState({ isOpen: true, savedCount: savedInSelection.length });
+        } else {
+            // No saved photos in selection, ask for simple confirmation
+            if (window.confirm(`Are you sure you want to permanently delete ${selectedPhotos.length} photo(s)? This action cannot be undone.`)) {
+                handleDeletePhotos(selectedPhotos);
+            }
+        }
+    }, [selectedPhotos, handleDeletePhotos]);
+
+    const handleConfirmDelete = useCallback(() => {
+        handleDeletePhotos(selectedPhotos);
+        setConfirmDeleteState({ isOpen: false, savedCount: 0 });
+    }, [selectedPhotos, handleDeletePhotos]);
+
+    const handleConfirmDeleteKeepSaved = useCallback(() => {
+        const photosToDelete = selectedPhotos.filter(p => !p.isSaved);
+        if (photosToDelete.length > 0) {
+            handleDeletePhotos(photosToDelete);
+        }
+        // Also deselect the saved ones that were not deleted
+        setPhotos(prev => {
+            const newPhotos = new Map(prev);
+            selectedPhotos.forEach(p => {
+                if (p.isSaved && newPhotos.has(p.id)) {
+                    newPhotos.set(p.id, { ...p, selected: false });
+                }
+            });
+            return newPhotos;
+        });
+        setConfirmDeleteState({ isOpen: false, savedCount: 0 });
+    }, [selectedPhotos, handleDeletePhotos, setPhotos]);
+
+    const handleCancelDelete = useCallback(() => {
+        setConfirmDeleteState({ isOpen: false, savedCount: 0 });
+    }, []);
 
 
     // --- High-level Handlers (combining selection and business logic) ---
@@ -254,18 +322,27 @@ export const usePhotoManager = ({ userProfile, onProfileUpdate, filterLabel }: U
         handleLoadPhotos,
         handleSelectPhoto,
         selectedPhotos,
-        handleDeleteSelected,
+        savedPhotos,
+        handleRequestDelete,
         handleApplyRulesManually,
         handleSelectAll,
         handleClearSelection,
         tfBackend,
         isolateSelection,
         handleToggleIsolateSelection,
+        isolateSaved,
+        handleToggleIsolateSaved,
         allAvailableLabels,
         allAvailableClassificationLabels,
         allAvailableDetectionLabels,
         modelsLoadState,
         handleCreateRuleFromSelection,
         handleCreateRuleFromFilter,
+        handleToggleSavePhoto,
+        handleMoveSavedPhotos,
+        confirmDeleteState,
+        handleConfirmDelete,
+        handleConfirmDeleteKeepSaved,
+        handleCancelDelete,
     };
 };

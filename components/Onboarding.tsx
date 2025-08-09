@@ -35,6 +35,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ onProfileSave }) => {
         autoApplyRules: true,
         unknownThreshold: 10,
         thumbnailSize: 'M',
+        savedFolderName: 'Pixo Saved',
       };
       onProfileSave(newProfile);
     }

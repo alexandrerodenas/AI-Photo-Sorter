@@ -13,6 +13,8 @@ import {
   EyeOff,
   Wand2,
   PlusCircle,
+  Heart,
+  Save,
 } from 'lucide-react';
 import { Spinner } from './ui.tsx';
 import AutocompleteInput from './AutocompleteInput.tsx';
@@ -41,6 +43,10 @@ interface PhotoSorterSidebarProps {
   modelsLoadState: ModelsLoadState;
   onCreateRuleFromSelection: () => void;
   onCreateRuleFromFilter: (label: string) => void;
+  savedPhotoCount: number;
+  isolateSaved: boolean;
+  onToggleIsolateSaved: () => void;
+  onMoveSavedPhotos: () => void;
 }
 
 const PhotoSorterSidebar: React.FC<PhotoSorterSidebarProps> = ({
@@ -66,6 +72,10 @@ const PhotoSorterSidebar: React.FC<PhotoSorterSidebarProps> = ({
                                                                  modelsLoadState,
                                                                  onCreateRuleFromSelection,
                                                                  onCreateRuleFromFilter,
+                                                                 savedPhotoCount,
+                                                                 isolateSaved,
+                                                                 onToggleIsolateSaved,
+                                                                 onMoveSavedPhotos,
                                                                }) => {
 
   const existingRuleLabels = useMemo(() => new Set([
@@ -192,6 +202,29 @@ const PhotoSorterSidebar: React.FC<PhotoSorterSidebarProps> = ({
                 </>
             )}
           </button>
+          <button
+              onClick={onToggleIsolateSaved}
+              disabled={savedPhotoCount === 0 && !isolateSaved}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-pink-500 text-white font-semibold rounded-md hover:bg-pink-600 transition disabled:bg-gray-400/50 disabled:text-white/80 disabled:cursor-not-allowed"
+              title={isolateSaved ? "Show all photos" : "Show only saved photos"}
+          >
+            {isolateSaved ? (
+                <>
+                  <Eye className="w-5 h-5"/> Show All
+                </>
+            ) : (
+                <>
+                  <Heart className="w-5 h-5 fill-current"/> Isolate Saved ({savedPhotoCount})
+                </>
+            )}
+          </button>
+          <button
+              onClick={onMoveSavedPhotos}
+              disabled={savedPhotoCount === 0}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white font-semibold rounded-md hover:bg-green-700 transition disabled:bg-green-400/50 disabled:cursor-not-allowed"
+          >
+            <Save className="w-5 h-5"/> Move Saved ({savedPhotoCount})
+          </button>
           <button onClick={onDeleteSelected} disabled={selectedPhotoCount === 0} className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-600 text-white font-semibold rounded-md hover:bg-red-700 transition disabled:bg-red-400/50 disabled:cursor-not-allowed">
             <Trash2 className="w-5 h-5"/> Delete Selected ({selectedPhotoCount})
           </button>
@@ -203,9 +236,13 @@ const PhotoSorterSidebar: React.FC<PhotoSorterSidebarProps> = ({
             <span>Total Photos</span>
             <span className="px-2 py-0.5 bg-primary/20 text-primary rounded-full">{totalPhotoCount}</span>
           </div>
-          <div className="flex justify-between items-center text-sm font-medium">
+          <div className="flex justify-between items-center text-sm font-medium mb-2">
             <span>Selected</span>
             <span className="px-2 py-0.5 bg-accent/20 text-accent rounded-full">{selectedPhotoCount}</span>
+          </div>
+          <div className="flex justify-between items-center text-sm font-medium">
+            <span>Saved</span>
+            <span className="px-2 py-0.5 bg-pink-500/20 text-pink-500 rounded-full">{savedPhotoCount}</span>
           </div>
 
           <ModelLoadingIndicator status={modelsLoadState} />

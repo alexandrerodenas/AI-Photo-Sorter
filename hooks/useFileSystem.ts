@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import type { Photo } from '../services/types.ts';
 import { PhotoStatus } from '../services/types.ts';
 
@@ -18,6 +18,24 @@ async function deleteFileByPath(dirHandle: FileSystemDirectoryHandle, path: stri
   } catch (error) {
     console.error(`Failed to delete file ${path}:`, error);
     return false;
+  }
+}
+
+// Helper to get a file handle by its relative path
+async function getFileHandleByPath(dirHandle: FileSystemDirectoryHandle, path: string): Promise<FileSystemFileHandle | null> {
+  const pathParts = path.split('/');
+  const fileName = pathParts.pop();
+  if (!fileName) return null;
+
+  try {
+    let currentDirHandle = dirHandle;
+    for (const part of pathParts) {
+      currentDirHandle = await currentDirHandle.getDirectoryHandle(part, { create: false });
+    }
+    return await currentDirHandle.getFileHandle(fileName);
+  } catch (error) {
+    console.error(`Could not get handle for file ${path}:`, error);
+    return null;
   }
 }
 
@@ -103,24 +121,20 @@ export const useFileSystem = (
     }
   }, [isApiSupported, directoryHandleRef, setPhotos, setStatusMessage]);
 
-  const handleDeleteSelected = useCallback(async () => {
-    if (selectedPhotos.length === 0 || !directoryHandleRef.current) return;
+  const handleDeletePhotos = useCallback(async (photosToDelete: Photo[]) => {
+    if (photosToDelete.length === 0 || !directoryHandleRef.current) return;
 
-    if (!window.confirm(`Are you sure you want to permanently delete ${selectedPhotos.length} photo(s)? This action cannot be undone.`)) {
-      return;
-    }
-
-    setStatusMessage(`Deleting ${selectedPhotos.length} photos...`);
+    setStatusMessage(`Deleting ${photosToDelete.length} photo(s)...`);
 
     // Optimistically remove from UI
     setPhotos(prevPhotos => {
       const newPhotos = new Map(prevPhotos);
-      selectedPhotos.forEach(p => newPhotos.delete(p.id));
+      photosToDelete.forEach(p => newPhotos.delete(p.id));
       return newPhotos;
     });
 
     let deletedCount = 0;
-    await Promise.all(selectedPhotos.map(async (p) => {
+    await Promise.all(photosToDelete.map(async (p) => {
       const success = await deleteFileByPath(directoryHandleRef.current!, p.id);
       if (success) {
         URL.revokeObjectURL(p.objectURL); // Clean up blob URL
@@ -128,13 +142,97 @@ export const useFileSystem = (
       }
     }));
 
-    if (deletedCount < selectedPhotos.length) {
-      setStatusMessage(`Deleted ${deletedCount} of ${selectedPhotos.length} photos. Some deletions failed.`);
+    if (deletedCount < photosToDelete.length) {
+      setStatusMessage(`Deleted ${deletedCount} of ${photosToDelete.length} photos. Some deletions failed.`);
       // Potentially add back photos that failed to delete, or prompt user to reload.
     } else {
       setStatusMessage(`Successfully deleted ${deletedCount} photos. ✅`);
     }
-  }, [selectedPhotos, directoryHandleRef, setPhotos, setStatusMessage]);
+  }, [directoryHandleRef, setPhotos, setStatusMessage]);
+
+  const handleMoveSaved = useCallback(async (savedPhotos: Photo[], savedFolderName: string) => {
+    if (savedPhotos.length === 0 || !directoryHandleRef.current) return;
+
+    if (!window.confirm(`This will move ${savedPhotos.length} photo(s) to a new directory and remove them from here. This action is permanent. Continue?`)) {
+      return;
+    }
+
+    let destDirHandle: FileSystemDirectoryHandle;
+    try {
+      destDirHandle = await (window as any).showDirectoryPicker({
+        title: 'Select Destination Directory for Saved Photos'
+      });
+    } catch (error) {
+      if ((error as DOMException).name === 'AbortError') {
+        setStatusMessage('Destination selection cancelled.');
+      } else {
+        setStatusMessage('Could not open destination directory.');
+        console.error(error);
+      }
+      return;
+    }
+
+    try {
+      setStatusMessage('Preparing to move files...');
+      const targetSubDir = await destDirHandle.getDirectoryHandle(savedFolderName, { create: true });
+
+      const movedPhotoIds: string[] = [];
+      const failedMoves: string[] = [];
+
+      for (const photo of savedPhotos) {
+        setStatusMessage(`Moving ${photo.id}...`);
+        const sourceHandle = directoryHandleRef.current;
+        const sourceFileHandle = await getFileHandleByPath(sourceHandle, photo.id);
+
+        if (!sourceFileHandle) {
+          console.error(`Could not find source file for ${photo.id}`);
+          failedMoves.push(photo.id);
+          continue;
+        }
+
+        try {
+          const fileData = await sourceFileHandle.getFile();
+          const newFileHandle = await targetSubDir.getFileHandle(fileData.name, { create: true });
+          const writable = await newFileHandle.createWritable();
+          await writable.write(fileData);
+          await writable.close();
+
+          const deleted = await deleteFileByPath(sourceHandle, photo.id);
+          if (deleted) {
+            movedPhotoIds.push(photo.id);
+          } else {
+            console.error(`Copied but failed to delete original for ${photo.id}`);
+            failedMoves.push(photo.id);
+          }
+        } catch (moveError) {
+          console.error(`Error moving file ${photo.id}:`, moveError);
+          failedMoves.push(photo.id);
+        }
+      }
+
+      setPhotos(prev => {
+        const newPhotos = new Map(prev);
+        movedPhotoIds.forEach(id => {
+          const photo = newPhotos.get(id);
+          if (photo) {
+            URL.revokeObjectURL(photo.objectURL);
+            newPhotos.delete(id);
+          }
+        });
+        return newPhotos;
+      });
+
+      if (failedMoves.length > 0) {
+        setStatusMessage(`Moved ${movedPhotoIds.length} photos. ${failedMoves.length} failed.`);
+      } else {
+        setStatusMessage(`Successfully moved ${movedPhotoIds.length} photos to "${savedFolderName}". ✅`);
+      }
+
+    } catch(err) {
+      setStatusMessage('An error occurred during the move operation.');
+      console.error(err);
+    }
+  }, [directoryHandleRef, setPhotos, setStatusMessage]);
 
   // This effect is to manage the global loading state based on analysis progress.
   // It's a bit of a grey area, but FileSystem is the "entry point" for loading.
@@ -153,5 +251,5 @@ export const useFileSystem = (
   }, [photos, isLoading, setStatusMessage]);
 
 
-  return { isLoading, isApiSupported, handleLoadPhotos, handleDeleteSelected };
+  return { isLoading, isApiSupported, handleLoadPhotos, handleDeletePhotos, handleMoveSaved };
 };

@@ -10,9 +10,10 @@ interface FolderViewProps {
   onViewPhoto: (photo: Photo) => void;
   thumbnailSize: ThumbnailSize;
   onFilterChange: (label: string) => void;
+  onToggleSave: (id: string) => void;
 }
 
-const FolderView: React.FC<FolderViewProps> = ({ photos, onSelectPhoto, onViewPhoto, thumbnailSize, onFilterChange }) => {
+const FolderView: React.FC<FolderViewProps> = ({ photos, onSelectPhoto, onViewPhoto, thumbnailSize, onFilterChange, onToggleSave }) => {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set([PhotoStatus.ANALYZED, PhotoStatus.UNCATEGORIZED]));
   const [sortOrder, setSortOrder] = useState<'alpha' | 'count'>('alpha');
   const [groupBy, setGroupBy] = useState<'classification' | 'detection'>('classification');
@@ -206,7 +207,7 @@ const FolderView: React.FC<FolderViewProps> = ({ photos, onSelectPhoto, onViewPh
                                   </div>
                                   {isLabelExpanded && (
                                       <div className={`pl-7 pt-2 grid ${sizeClassesAnalyzed[thumbnailSize]} gap-4`}>
-                                        {labelPhotos.map(photo => <PhotoCard key={photo.id} photo={photo} onSelect={onSelectPhoto} onView={onViewPhoto} onFilterChange={onFilterChange} />)}
+                                        {labelPhotos.map(photo => <PhotoCard key={photo.id} photo={photo} onSelect={onSelectPhoto} onView={onViewPhoto} onFilterChange={onFilterChange} onToggleSave={onToggleSave} />)}
                                       </div>
                                   )}
                                 </div>
@@ -214,7 +215,7 @@ const FolderView: React.FC<FolderViewProps> = ({ photos, onSelectPhoto, onViewPh
                           })
                       ) : (
                           <div className={`grid ${sizeClassesOther[thumbnailSize]} gap-4`}>
-                            {(content as Photo[]).map(photo => <PhotoCard key={photo.id} photo={photo} onSelect={onSelectPhoto} onView={onViewPhoto} onFilterChange={onFilterChange} />)}
+                            {(content as Photo[]).map(photo => <PhotoCard key={photo.id} photo={photo} onSelect={onSelectPhoto} onView={onViewPhoto} onFilterChange={onFilterChange} onToggleSave={onToggleSave} />)}
                           </div>
                       )}
                     </div>
