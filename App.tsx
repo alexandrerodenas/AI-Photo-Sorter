@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import type { UserProfile } from './services/types.ts';
-import PhotoSorter from './components/PhotoSorter';
-import Onboarding from './components/Onboarding';
-import { storageService } from './services/storage';
+import PhotoSorter from './components/PhotoSorter.tsx';
+import Onboarding from './components/Onboarding.tsx';
+import { storageService } from './services/storage.ts';
+import WelcomeModal from './components/WelcomeModal.tsx';
 
 const App: React.FC = () => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isWelcomeModalOpen, setWelcomeModalOpen] = useState(false);
 
   useEffect(() => {
     let loadedProfile = storageService.loadUserProfile();
@@ -23,10 +25,20 @@ const App: React.FC = () => {
       if (!loadedProfile.thumbnailSize) {
         loadedProfile.thumbnailSize = 'M';
       }
+      if (!loadedProfile.savedFolderName) {
+        loadedProfile.savedFolderName = 'Pixo Saved';
+      }
     }
 
     setUserProfile(loadedProfile);
     setIsLoading(false);
+
+    if (loadedProfile) {
+      const welcomeDismissed = storageService.loadWelcomeDismissed();
+      if (!welcomeDismissed) {
+        setWelcomeModalOpen(true);
+      }
+    }
 
     // Set dark mode from system preference
     if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
@@ -35,8 +47,20 @@ const App: React.FC = () => {
   }, []);
 
   const handleProfileUpdate = useCallback((profile: UserProfile) => {
+    const isFirstTime = !userProfile;
     storageService.saveUserProfile(profile);
     setUserProfile(profile);
+
+    if (isFirstTime) {
+      setWelcomeModalOpen(true);
+    }
+  }, [userProfile]);
+
+  const handleWelcomeModalClose = useCallback((dontShowAgain: boolean) => {
+    setWelcomeModalOpen(false);
+    if (dontShowAgain) {
+      storageService.saveWelcomeDismissed(true);
+    }
   }, []);
 
   if (isLoading) {
@@ -50,7 +74,10 @@ const App: React.FC = () => {
   return (
       <div className="min-h-screen font-sans">
         {userProfile ? (
-            <PhotoSorter userProfile={userProfile} onProfileUpdate={handleProfileUpdate} />
+            <>
+              <PhotoSorter userProfile={userProfile} onProfileUpdate={handleProfileUpdate} />
+              <WelcomeModal isOpen={isWelcomeModalOpen} onClose={handleWelcomeModalClose} />
+            </>
         ) : (
             <Onboarding onProfileSave={handleProfileUpdate} />
         )}

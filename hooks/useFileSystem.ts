@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { Photo } from '../services/types.ts';
 import { PhotoStatus } from '../services/types.ts';
 
