@@ -3,7 +3,8 @@ import React, { useState, useRef } from 'react';
 import type { UserProfile } from '../services/types.ts';
 import { ProfileEditor } from './ProfileEditor.tsx';
 import { RulesManager } from './RulesManager.tsx';
-import { User, X, Wand2, Settings, Save, Upload, Download } from 'lucide-react';
+import { CustomLabelsManager } from './CustomLabelsManager.tsx';
+import { User, X, Wand2, Settings, Save, Upload, Download, Tags } from 'lucide-react';
 
 interface ProfileSettingsModalProps {
   isOpen: boolean;
@@ -12,16 +13,18 @@ interface ProfileSettingsModalProps {
   onSave: (newProfile: UserProfile) => void;
   allAvailableClassificationLabels: string[];
   allAvailableDetectionLabels: string[];
+  allAvailableLabels: string[];
 }
 
-const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({ isOpen, onClose, userProfile, onSave, allAvailableClassificationLabels, allAvailableDetectionLabels }) => {
+const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({ isOpen, onClose, userProfile, onSave, allAvailableClassificationLabels, allAvailableDetectionLabels, allAvailableLabels }) => {
   if (!isOpen) return null;
 
-  const [activeTab, setActiveTab] = useState<'profile' | 'rules'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'rules' | 'labels'>('profile');
   const [editedProfile, setEditedProfile] = useState<UserProfile>(() => ({
     ...userProfile,
     classificationRules: userProfile.classificationRules || [],
     detectionRules: userProfile.detectionRules || [],
+    customLabels: userProfile.customLabels || [],
     unknownThreshold: userProfile.unknownThreshold ?? 10,
     thumbnailSize: userProfile.thumbnailSize ?? 'M',
     savedFolderName: userProfile.savedFolderName || 'Pixo Saved',
@@ -74,10 +77,12 @@ const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({ isOpen, onC
         }
         if (!importedProfile.classificationRules) importedProfile.classificationRules = [];
         if (!importedProfile.detectionRules) importedProfile.detectionRules = [];
+        if (!importedProfile.customLabels) importedProfile.customLabels = [];
 
         const isValid = typeof importedProfile.firstName === 'string' &&
             Array.isArray(importedProfile.classificationRules) &&
             Array.isArray(importedProfile.detectionRules) &&
+            Array.isArray(importedProfile.customLabels) &&
             typeof importedProfile.autoApplyRules === 'boolean';
 
         if (isValid) {
@@ -143,13 +148,20 @@ const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({ isOpen, onC
               <TabButton isActive={activeTab === 'rules'} onClick={() => setActiveTab('rules')} icon={<Wand2 className="w-4 h-4" />}>
                 AI Rules
               </TabButton>
+              <TabButton isActive={activeTab === 'labels'} onClick={() => setActiveTab('labels')} icon={<Tags className="w-4 h-4" />}>
+                Custom Labels
+              </TabButton>
             </nav>
           </div>
           <div className="p-6 overflow-y-auto">
-            {activeTab === 'profile' ? (
+            {activeTab === 'profile' && (
                 <ProfileEditor profile={editedProfile} setProfile={setEditedProfile} />
-            ) : (
+            )}
+            {activeTab === 'rules' && (
                 <RulesManager profile={editedProfile} setProfile={setEditedProfile} allAvailableClassificationLabels={allAvailableClassificationLabels} allAvailableDetectionLabels={allAvailableDetectionLabels} />
+            )}
+            {activeTab === 'labels' && (
+                <CustomLabelsManager profile={editedProfile} setProfile={setEditedProfile} allAvailableLabels={allAvailableLabels} />
             )}
           </div>
           <div className="flex justify-between items-center gap-3 p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex-shrink-0">

@@ -67,22 +67,25 @@ const FolderView: React.FC<FolderViewProps> = ({ photos, onSelectPhoto, onViewPh
 
     for (const photo of photosToGroup) {
       if (photo.status === PhotoStatus.ANALYZED) {
+        let keyLabel: string | null = photo.customLabel || null;
+
+        if (photo.customLabel) {
+          if (!groups[PhotoStatus.ANALYZED][photo.customLabel]) {
+            groups[PhotoStatus.ANALYZED][photo.customLabel] = [];
+          }
+          groups[PhotoStatus.ANALYZED][photo.customLabel].push(photo);
+          continue; // Skip other grouping logic if custom label is present
+        }
+
         if (groupBy === 'classification') {
           if (photo.classifications.length > 0) {
             const topPrediction = photo.classifications.reduce((max, p) => p.score > max.score ? p : max, photo.classifications[0]);
-            const label = topPrediction.label;
-            const capitalizedLabel = label.charAt(0).toUpperCase() + label.slice(1);
-
-            if (!groups[PhotoStatus.ANALYZED][capitalizedLabel]) {
-              groups[PhotoStatus.ANALYZED][capitalizedLabel] = [];
-            }
-            groups[PhotoStatus.ANALYZED][capitalizedLabel].push(photo);
+            keyLabel = topPrediction.label;
           }
         } else { // groupBy === 'detection'
           if (photo.detections.length > 0) {
-            const uniqueLabels = new Set<string>();
-            photo.detections.forEach(d => uniqueLabels.add(d.label));
-
+            // Group by each detected object label
+            const uniqueLabels = new Set<string>(photo.detections.map(d => d.label));
             uniqueLabels.forEach(label => {
               const capitalizedLabel = label.charAt(0).toUpperCase() + label.slice(1);
               if (!groups[PhotoStatus.ANALYZED][capitalizedLabel]) {
@@ -90,8 +93,18 @@ const FolderView: React.FC<FolderViewProps> = ({ photos, onSelectPhoto, onViewPh
               }
               groups[PhotoStatus.ANALYZED][capitalizedLabel].push(photo);
             });
+            continue; // Skip single label push below
           }
         }
+
+        if (keyLabel) {
+          const capitalizedLabel = keyLabel.charAt(0).toUpperCase() + keyLabel.slice(1);
+          if (!groups[PhotoStatus.ANALYZED][capitalizedLabel]) {
+            groups[PhotoStatus.ANALYZED][capitalizedLabel] = [];
+          }
+          groups[PhotoStatus.ANALYZED][capitalizedLabel].push(photo);
+        }
+
       } else {
         const status = photo.status as keyof typeof groups;
         if (groups[status]) {

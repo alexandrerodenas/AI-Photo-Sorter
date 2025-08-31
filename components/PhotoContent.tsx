@@ -27,7 +27,7 @@ const PhotoGrid: React.FC<PhotoGridProps> = ({ photos, onSelectPhoto, onViewPhot
     S: 'grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-10',
     M: 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8',
     L: 'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6',
-    XL: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5',
+    XL: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl-grid-cols-5',
   };
 
   return (
@@ -110,6 +110,7 @@ const PhotoContent: React.FC<PhotoContentProps> = ({
     // Then apply label filter on the processed photos
     return processedPhotos.filter(p =>
             (p.status === PhotoStatus.ANALYZED || p.status === PhotoStatus.UNCATEGORIZED) && (
+                p.customLabel?.toLowerCase().includes(lowercasedFilter) ||
                 p.classifications.some(pred => pred.label.toLowerCase().includes(lowercasedFilter)) ||
                 p.detections.some(pred => pred.label.toLowerCase().includes(lowercasedFilter))
             )

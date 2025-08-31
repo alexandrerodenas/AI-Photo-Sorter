@@ -167,6 +167,7 @@ const PhotoSorter: React.FC<PhotoSorterProps> = ({ userProfile, onProfileUpdate 
             onSave={onProfileUpdate}
             allAvailableClassificationLabels={allAvailableClassificationLabels}
             allAvailableDetectionLabels={allAvailableDetectionLabels}
+            allAvailableLabels={allAvailableLabels}
         />
       </div>
   );

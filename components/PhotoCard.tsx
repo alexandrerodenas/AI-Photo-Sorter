@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import type { Photo } from '../services/types.ts';
 import { PhotoStatus } from '../services/types.ts';
 import { StatusPill } from './ui.tsx';
-import { Check, Tag, Boxes, Heart } from 'lucide-react';
+import { Check, Tag, Boxes, Heart, Bookmark } from 'lucide-react';
 
 interface PhotoCardProps {
   photo: Photo;
@@ -117,8 +117,22 @@ function PhotoCard({ photo, onSelect, onView, onFilterChange, onToggleSave }: Ph
 
 
               <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/70 to-transparent">
-                {(topDetection || topClassification) && (
+                {(photo.customLabel || topDetection || topClassification) && (
                     <div className="mb-1 space-y-1">
+                      {photo.customLabel && (
+                          <div className="flex items-center justify-between text-white">
+                            <button
+                                onClick={(e) => handleLabelClick(e, photo.customLabel!)}
+                                className="flex items-center gap-1.5 overflow-hidden text-left hover:underline focus:outline-none focus:underline"
+                                title={`Filter by custom label "${photo.customLabel}"`}
+                            >
+                              <Bookmark className="w-3 h-3 text-secondary shrink-0" />
+                              <span className="text-sm font-bold capitalize truncate">
+                                        {photo.customLabel}
+                                    </span>
+                            </button>
+                          </div>
+                      )}
                       {topDetection && (
                           <div className="flex items-center justify-between text-white">
                             <button
@@ -136,7 +150,7 @@ function PhotoCard({ photo, onSelect, onView, onFilterChange, onToggleSave }: Ph
                                 </span>
                           </div>
                       )}
-                      {topClassification && (
+                      {!photo.customLabel && topClassification && (
                           <div className="flex items-center justify-between text-white">
                             <button
                                 onClick={(e) => handleLabelClick(e, topClassification.label)}

@@ -50,6 +50,22 @@ export const usePhotoAnalysis = (
       const threshold = userProfileRef.current?.unknownThreshold ?? 10;
       const isUncategorized = classifications.length === 0 || classifications.every(p => (p.score * 100) < threshold);
 
+      let matchedCustomLabel: string | undefined = undefined;
+      const customLabels = userProfileRef.current?.customLabels ?? [];
+      if (customLabels.length > 0) {
+        const allPhotoLabels = new Set([
+          ...classifications.map(c => c.label.toLowerCase()),
+          ...detections.map(d => d.label.toLowerCase())
+        ]);
+
+        for (const customLabel of customLabels) {
+          if (customLabel.labels.some(l => allPhotoLabels.has(l))) {
+            matchedCustomLabel = customLabel.name;
+            break; // Found the first match
+          }
+        }
+      }
+
       setPhotos(prev => {
         const newPhotos = new Map(prev);
         const currentPhoto = newPhotos.get(photoId);
@@ -59,7 +75,8 @@ export const usePhotoAnalysis = (
             ...currentPhoto,
             status: finalStatus,
             classifications,
-            detections
+            detections,
+            customLabel: matchedCustomLabel,
           };
 
           if (updatedPhoto.status === PhotoStatus.ANALYZED && userProfileRef.current?.autoApplyRules) {

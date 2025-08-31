@@ -28,6 +28,9 @@ const App: React.FC = () => {
       if (!loadedProfile.savedFolderName) {
         loadedProfile.savedFolderName = 'Pixo Saved';
       }
+      if (!loadedProfile.customLabels) {
+        loadedProfile.customLabels = [];
+      }
     }
 
     setUserProfile(loadedProfile);

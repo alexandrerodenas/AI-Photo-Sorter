@@ -20,12 +20,19 @@ export interface Photo {
   detections: Prediction[];
   selected: boolean;
   isSaved?: boolean;
+  customLabel?: string;
 }
 
 export interface FilterRule {
   id: string;
   label: string;
   confidence?: number; // 0-100, optional
+}
+
+export interface CustomLabel {
+  id: string;
+  name: string;
+  labels: string[]; // a list of AI labels (lowercase)
 }
 
 export type ThumbnailSize = 'XS' | 'S' | 'M' | 'L' | 'XL';
@@ -45,4 +52,5 @@ export interface UserProfile {
   unknownThreshold?: number; // 0-50, percentage for classifying photos as 'Uncategorized'
   thumbnailSize?: ThumbnailSize;
   savedFolderName?: string;
+  customLabels?: CustomLabel[];
 }

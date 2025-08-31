@@ -83,13 +83,15 @@ export const usePhotoManager = ({ userProfile, onProfileUpdate, filterLabel }: U
                 photo.detections.forEach(d => detectionLabels.add(d.label.toLowerCase()));
             }
         }
-        const allLabels = new Set([...classificationLabels, ...detectionLabels]);
+        const customLabelNames = (userProfile.customLabels ?? []).map(cl => cl.name.toLowerCase());
+        const allLabels = new Set([...classificationLabels, ...detectionLabels, ...customLabelNames]);
+
         return {
             allAvailableClassificationLabels: Array.from(classificationLabels).sort(),
             allAvailableDetectionLabels: Array.from(detectionLabels).sort(),
             allAvailableLabels: Array.from(allLabels).sort()
         };
-    }, [photos]);
+    }, [photos, userProfile.customLabels]);
 
     const handleToggleSavePhoto = useCallback((id: string) => {
         setPhotos(prev => {

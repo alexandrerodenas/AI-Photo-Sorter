@@ -32,6 +32,9 @@ const Onboarding: React.FC<OnboardingProps> = ({ onProfileSave }) => {
           {id: '3', label: 'person', confidence: 75},
           {id: '4', label: 'car', confidence: 75},
         ],
+        customLabels: [
+          { id: 'cl-animals-default', name: 'Animals', labels: ['cat', 'dog'] }
+        ],
         autoApplyRules: true,
         unknownThreshold: 10,
         thumbnailSize: 'M',
