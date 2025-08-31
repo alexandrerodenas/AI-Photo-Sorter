@@ -54,17 +54,18 @@ export const usePhotoManager = ({ userProfile, onProfileUpdate, filterLabel }: U
     } = useFileSystem(directoryHandleRef, photos, selectedPhotos, setPhotos, setStatusMessage);
 
     // --- Rule Application Logic ---
-    const applyRules = useCallback((predictions: Prediction[], rules: FilterRule[]): boolean => {
-        if (!rules || rules.length === 0) return false;
+    const applyRules = useCallback((predictions: Prediction[], rules: FilterRule[]): string[] => {
+        if (!rules || rules.length === 0) return [];
+        const matchedRuleLabels: string[] = [];
         for (const rule of rules) {
             const photoPrediction = predictions.find(p => p.label.toLowerCase().includes(rule.label.toLowerCase()));
             if (photoPrediction) {
                 if (rule.confidence === undefined || (photoPrediction.score * 100) >= rule.confidence) {
-                    return true;
+                    matchedRuleLabels.push(rule.label);
                 }
             }
         }
-        return false;
+        return matchedRuleLabels;
     }, []);
 
     // --- Sub-hook for Analysis Logic ---
@@ -199,16 +200,43 @@ export const usePhotoManager = ({ userProfile, onProfileUpdate, filterLabel }: U
             setStatusMessage("No analyzed photos to apply rules to.");
             return;
         }
-        const photosToSelect: Photo[] = [];
-        for (const photo of photosToProcess) {
-            const classificationMatches = applyRules(photo.classifications, userProfileRef.current.classificationRules);
-            const detectionMatches = applyRules(photo.detections, userProfileRef.current.detectionRules);
-            if (classificationMatches || detectionMatches) {
-                photosToSelect.push(photo);
+
+        let newlySelectedCount = 0;
+        let matchedCount = 0;
+
+        setPhotos(prevPhotos => {
+            const newPhotos = new Map(prevPhotos);
+            for (const photo of photosToProcess) {
+                const classificationMatches = applyRules(photo.classifications, userProfileRef.current.classificationRules);
+                const detectionMatches = applyRules(photo.detections, userProfileRef.current.detectionRules);
+
+                if (classificationMatches.length > 0 || detectionMatches.length > 0) {
+                    matchedCount++;
+                    const currentPhoto = newPhotos.get(photo.id)!;
+                    if (!currentPhoto.selected) {
+                        newlySelectedCount++;
+                    }
+                    newPhotos.set(photo.id, {
+                        ...currentPhoto,
+                        selected: true,
+                        matchedRules: {
+                            classification: classificationMatches,
+                            detection: detectionMatches,
+                        }
+                    });
+                }
             }
+            return newPhotos;
+        });
+
+        if (newlySelectedCount > 0) {
+            setStatusMessage(`Selected ${newlySelectedCount} new photo(s) based on your rules.`);
+        } else if (matchedCount > 0) {
+            setStatusMessage(`All ${matchedCount} matching photo(s) were already selected.`);
+        } else {
+            setStatusMessage("No photos matched your rules. ✨");
         }
-        selectAllFiltered(photosToSelect, { isManualApplication: true });
-    }, [photos, applyRules, selectAllFiltered]);
+    }, [photos, applyRules, userProfileRef, setPhotos, setStatusMessage]);
 
     const handleCreateRuleFromSelection = useCallback(() => {
         if (selectedPhotos.length === 0) {

@@ -21,6 +21,10 @@ export interface Photo {
   selected: boolean;
   isSaved?: boolean;
   customLabel?: string;
+  matchedRules?: {
+    classification?: string[]; // Names of matching classification rules
+    detection?: string[]; // Names of matching detection rules
+  };
 }
 
 export interface FilterRule {

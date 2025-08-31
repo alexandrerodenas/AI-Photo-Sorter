@@ -1,5 +1,6 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import type { Photo } from '../services/types.ts';
+import { PhotoStatus } from '../services/types.ts';
 
 
 export const usePhotoSelection = (
@@ -23,7 +24,13 @@ export const usePhotoSelection = (
       const newPhotos = new Map(prev);
       const photo = newPhotos.get(id);
       if (photo) {
-        newPhotos.set(id, { ...photo, selected: !photo.selected });
+        const isBecomingDeselected = photo.selected;
+        const update: Partial<Photo> = { selected: !photo.selected };
+        if (isBecomingDeselected) {
+          // Clear matched rules on manual deselect
+          update.matchedRules = undefined;
+        }
+        newPhotos.set(id, { ...photo, ...update });
       }
       return newPhotos;
     });
@@ -82,7 +89,7 @@ export const usePhotoSelection = (
       photosToClear.forEach(photo => {
         const currentPhoto = newPhotos.get(photo.id);
         if (currentPhoto?.selected) {
-          newPhotos.set(photo.id, { ...currentPhoto, selected: false });
+          newPhotos.set(photo.id, { ...currentPhoto, selected: false, matchedRules: undefined });
         }
       });
       return newPhotos;

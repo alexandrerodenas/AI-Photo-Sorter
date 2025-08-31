@@ -117,58 +117,54 @@ function PhotoCard({ photo, onSelect, onView, onFilterChange, onToggleSave }: Ph
 
 
               <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/70 to-transparent">
-                {(photo.customLabel || topDetection || topClassification) && (
-                    <div className="mb-1 space-y-1">
-                      {photo.customLabel && (
-                          <div className="flex items-center justify-between text-white">
-                            <button
-                                onClick={(e) => handleLabelClick(e, photo.customLabel!)}
-                                className="flex items-center gap-1.5 overflow-hidden text-left hover:underline focus:outline-none focus:underline"
-                                title={`Filter by custom label "${photo.customLabel}"`}
-                            >
-                              <Bookmark className="w-3 h-3 text-secondary shrink-0" />
-                              <span className="text-sm font-bold capitalize truncate">
-                                        {photo.customLabel}
-                                    </span>
-                            </button>
-                          </div>
-                      )}
-                      {topDetection && (
-                          <div className="flex items-center justify-between text-white">
-                            <button
-                                onClick={(e) => handleLabelClick(e, topDetection.label)}
-                                className="flex items-center gap-1.5 overflow-hidden text-left hover:underline focus:outline-none focus:underline"
-                                title={`Filter by "${topDetection.label}"`}
-                            >
-                              <Boxes className="w-3 h-3 text-white/90 shrink-0" />
-                              <span className="text-sm font-bold capitalize truncate">
-                                        {topDetection.label}
-                                    </span>
-                            </button>
-                            <span className="text-xs font-mono bg-accent/20 px-1.5 py-0.5 rounded-full">
-                                    {`${(topDetection.score * 100).toFixed(0)}%`}
+                <div className="mb-1 space-y-1">
+                  {photo.customLabel ? (
+                      <div className="flex items-center justify-between text-white">
+                        <button
+                            onClick={(e) => handleLabelClick(e, photo.customLabel!)}
+                            className="flex items-center gap-1.5 overflow-hidden text-left hover:underline focus:outline-none focus:underline"
+                            title={`Filter by custom label "${photo.customLabel}"`}
+                        >
+                          <Bookmark className="w-3 h-3 text-secondary shrink-0" />
+                          <span className="text-sm font-bold capitalize truncate">
+                                    {photo.customLabel}
                                 </span>
-                          </div>
-                      )}
-                      {!photo.customLabel && topClassification && (
-                          <div className="flex items-center justify-between text-white">
-                            <button
-                                onClick={(e) => handleLabelClick(e, topClassification.label)}
-                                className="flex items-center gap-1.5 overflow-hidden text-left hover:underline focus:outline-none focus:underline"
-                                title={`Filter by "${topClassification.label}"`}
-                            >
-                              <Tag className="w-3 h-3 text-white/90 shrink-0" />
-                              <span className="text-sm font-bold capitalize truncate">
-                                        {topClassification.label}
-                                    </span>
-                            </button>
-                            <span className="text-xs font-mono bg-white/20 px-1.5 py-0.5 rounded-full">
-                                    {`${(topClassification.score * 100).toFixed(0)}%`}
+                        </button>
+                      </div>
+                  ) : topDetection ? (
+                      <div className="flex items-center justify-between text-white">
+                        <button
+                            onClick={(e) => handleLabelClick(e, topDetection.label)}
+                            className="flex items-center gap-1.5 overflow-hidden text-left hover:underline focus:outline-none focus:underline"
+                            title={`Filter by "${topDetection.label}"`}
+                        >
+                          <Boxes className="w-3 h-3 text-white/90 shrink-0" />
+                          <span className="text-sm font-bold capitalize truncate">
+                                    {topDetection.label}
                                 </span>
-                          </div>
-                      )}
-                    </div>
-                )}
+                        </button>
+                        <span className="text-xs font-mono bg-accent/20 px-1.5 py-0.5 rounded-full">
+                                {`${(topDetection.score * 100).toFixed(0)}%`}
+                            </span>
+                      </div>
+                  ) : topClassification ? (
+                      <div className="flex items-center justify-between text-white">
+                        <button
+                            onClick={(e) => handleLabelClick(e, topClassification.label)}
+                            className="flex items-center gap-1.5 overflow-hidden text-left hover:underline focus:outline-none focus:underline"
+                            title={`Filter by "${topClassification.label}"`}
+                        >
+                          <Tag className="w-3 h-3 text-white/90 shrink-0" />
+                          <span className="text-sm font-bold capitalize truncate">
+                                    {topClassification.label}
+                                </span>
+                        </button>
+                        <span className="text-xs font-mono bg-white/20 px-1.5 py-0.5 rounded-full">
+                                {`${(topClassification.score * 100).toFixed(0)}%`}
+                            </span>
+                      </div>
+                  ) : null}
+                </div>
                 <p className="text-white text-xs truncate" title={photo.id.split(/[\\/]/).pop()}>
                   {photo.id.split(/[\\/]/).pop()}
                 </p>

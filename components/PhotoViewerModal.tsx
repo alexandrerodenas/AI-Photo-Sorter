@@ -2,7 +2,7 @@ import React from 'react';
 import type { Photo } from '../services/types.ts';
 import { PhotoStatus } from '../services/types.ts';
 import { Spinner } from './ui.tsx';
-import { X, Bot, Boxes } from 'lucide-react';
+import { X, Bot, Boxes, Wand2 } from 'lucide-react';
 
 interface PhotoViewerModalProps {
   photo: Photo | null;
@@ -13,6 +13,7 @@ const PhotoViewerModal: React.FC<PhotoViewerModalProps> = ({ photo, onClose }) =
   if (!photo) return null;
 
   const isAnalysisPending = photo.status === PhotoStatus.ANALYZING || photo.status === PhotoStatus.QUEUED;
+  const hasMatchedRules = photo.matchedRules && (photo.matchedRules.classification?.length || photo.matchedRules.detection?.length);
 
   return (
       <div className="fixed inset-0 bg-black/70 z-40 flex items-center justify-center" onClick={onClose}>
@@ -31,6 +32,26 @@ const PhotoViewerModal: React.FC<PhotoViewerModalProps> = ({ photo, onClose }) =
                 </div>
             ) : (
                 <div className="space-y-6">
+                  {hasMatchedRules && (
+                      <div className="p-3 bg-green-50 dark:bg-green-900/30 border-l-4 border-green-500 rounded-r-md">
+                        <h3 className="text-lg font-bold mb-2 flex items-center gap-2 text-green-700 dark:text-green-300">
+                          <Wand2 className="w-5 h-5"/> Matched Rules
+                        </h3>
+                        <ul className="space-y-1 text-sm list-disc list-inside text-gray-700 dark:text-gray-300">
+                          {photo.matchedRules!.classification?.map(ruleLabel => (
+                              <li key={`c-rule-${ruleLabel}`}>
+                                Classification: <span className="font-semibold capitalize">{ruleLabel}</span>
+                              </li>
+                          ))}
+                          {photo.matchedRules!.detection?.map(ruleLabel => (
+                              <li key={`d-rule-${ruleLabel}`}>
+                                Detection: <span className="font-semibold capitalize">{ruleLabel}</span>
+                              </li>
+                          ))}
+                        </ul>
+                      </div>
+                  )}
+
                   <div>
                     <h3 className="text-lg font-bold mb-3 flex items-center gap-2"><Bot className="w-5 h-5 text-secondary" /> AI Classifications</h3>
                     <ul className="space-y-3">

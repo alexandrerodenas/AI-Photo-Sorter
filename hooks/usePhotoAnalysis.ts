@@ -8,7 +8,7 @@ export const usePhotoAnalysis = (
     photos: Map<string, Photo>,
     setPhotos: React.Dispatch<React.SetStateAction<Map<string, Photo>>>,
     userProfileRef: React.RefObject<UserProfile>,
-    applyRules: (predictions: Prediction[], rules: FilterRule[]) => boolean,
+    applyRules: (predictions: Prediction[], rules: FilterRule[]) => string[],
     setStatusMessage: (message: string) => void,
 ) => {
   const [tfBackend, setTfBackend] = useState<string | null>(null);
@@ -71,7 +71,7 @@ export const usePhotoAnalysis = (
         const currentPhoto = newPhotos.get(photoId);
         if (currentPhoto) {
           const finalStatus = isUncategorized ? PhotoStatus.UNCATEGORIZED : PhotoStatus.ANALYZED;
-          const updatedPhoto = {
+          const updatedPhoto: Photo = {
             ...currentPhoto,
             status: finalStatus,
             classifications,
@@ -80,9 +80,16 @@ export const usePhotoAnalysis = (
           };
 
           if (updatedPhoto.status === PhotoStatus.ANALYZED && userProfileRef.current?.autoApplyRules) {
-            const matches = applyRules(updatedPhoto.classifications, userProfileRef.current.classificationRules) ||
-                applyRules(updatedPhoto.detections, userProfileRef.current.detectionRules);
-            if (matches) updatedPhoto.selected = true;
+            const classificationMatches = applyRules(updatedPhoto.classifications, userProfileRef.current.classificationRules);
+            const detectionMatches = applyRules(updatedPhoto.detections, userProfileRef.current.detectionRules);
+
+            if (classificationMatches.length > 0 || detectionMatches.length > 0) {
+              updatedPhoto.selected = true;
+              updatedPhoto.matchedRules = {
+                classification: classificationMatches,
+                detection: detectionMatches,
+              };
+            }
           }
           newPhotos.set(photoId, updatedPhoto);
         }
