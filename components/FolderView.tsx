@@ -120,8 +120,6 @@ const FolderView: React.FC<FolderViewProps> = ({ photos, onSelectPhoto, onViewPh
   }, [photos, sortOrder, groupBy]);
 
   const folderOrder = [
-    PhotoStatus.ANALYZING,
-    PhotoStatus.QUEUED,
     PhotoStatus.ANALYZED,
     PhotoStatus.UNCATEGORIZED,
     PhotoStatus.ERROR,

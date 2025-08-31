@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import type { Photo } from '../services/types.ts';
 import { PhotoStatus } from '../services/types.ts';
 import { StatusPill } from './ui.tsx';
@@ -14,6 +14,33 @@ interface PhotoCardProps {
 
 function PhotoCard({ photo, onSelect, onView, onFilterChange, onToggleSave }: PhotoCardProps) {
   const clickTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting) {
+            setIsVisible(true);
+            observer.unobserve(entry.target);
+          }
+        },
+        {
+          rootMargin: '200px 0px', // Load images a bit before they enter the viewport
+        }
+    );
+
+    const currentRef = cardRef.current;
+    if (currentRef) {
+      observer.observe(currentRef);
+    }
+
+    return () => {
+      if (currentRef) {
+        observer.unobserve(currentRef);
+      }
+    };
+  }, []);
 
   // Cleanup timer on unmount
   useEffect(() => {
@@ -58,77 +85,82 @@ function PhotoCard({ photo, onSelect, onView, onFilterChange, onToggleSave }: Ph
 
   return (
       <div
+          ref={cardRef}
           className="relative group aspect-square bg-gray-200 dark:bg-gray-800 rounded-lg overflow-hidden cursor-pointer shadow-md hover:shadow-xl transition-all duration-300"
           onClick={handleClick}
       >
-        <img src={photo.objectURL} alt={photo.id} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" loading="lazy" />
-        <div className="absolute inset-0 bg-black/10 group-hover:bg-black/30 transition-opacity duration-300"></div>
+        {isVisible && (
+            <>
+              <img src={photo.objectURL} alt={photo.id} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" loading="lazy" />
+              <div className="absolute inset-0 bg-black/10 group-hover:bg-black/30 transition-opacity duration-300"></div>
 
-        {photo.selected && (
-            <div className="absolute inset-0 border-4 border-accent rounded-lg pointer-events-none"></div>
+              {photo.selected && (
+                  <div className="absolute inset-0 border-4 border-accent rounded-lg pointer-events-none"></div>
+              )}
+
+              <StatusPill status={photo.status} />
+
+              <div className="absolute top-2 right-2 flex items-center gap-2 z-10">
+                <button
+                    onClick={(e) => { e.stopPropagation(); onToggleSave(photo.id); }}
+                    className="p-1.5 bg-black/40 rounded-full text-white hover:text-red-400 transition-colors"
+                    title={photo.isSaved ? "Unsave photo" : "Save for later"}
+                >
+                  <Heart className={`w-4 h-4 transition-all ${photo.isSaved ? 'fill-red-400' : 'fill-transparent'}`} />
+                </button>
+                {photo.selected && (
+                    <div className="bg-accent text-white rounded-full p-1">
+                      <Check className="w-4 h-4" />
+                    </div>
+                )}
+              </div>
+
+
+              <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/70 to-transparent">
+                {(topDetection || topClassification) && (
+                    <div className="mb-1 space-y-1">
+                      {topDetection && (
+                          <div className="flex items-center justify-between text-white">
+                            <button
+                                onClick={(e) => handleLabelClick(e, topDetection.label)}
+                                className="flex items-center gap-1.5 overflow-hidden text-left hover:underline focus:outline-none focus:underline"
+                                title={`Filter by "${topDetection.label}"`}
+                            >
+                              <Boxes className="w-3 h-3 text-white/90 shrink-0" />
+                              <span className="text-sm font-bold capitalize truncate">
+                                        {topDetection.label}
+                                    </span>
+                            </button>
+                            <span className="text-xs font-mono bg-accent/20 px-1.5 py-0.5 rounded-full">
+                                    {`${(topDetection.score * 100).toFixed(0)}%`}
+                                </span>
+                          </div>
+                      )}
+                      {topClassification && (
+                          <div className="flex items-center justify-between text-white">
+                            <button
+                                onClick={(e) => handleLabelClick(e, topClassification.label)}
+                                className="flex items-center gap-1.5 overflow-hidden text-left hover:underline focus:outline-none focus:underline"
+                                title={`Filter by "${topClassification.label}"`}
+                            >
+                              <Tag className="w-3 h-3 text-white/90 shrink-0" />
+                              <span className="text-sm font-bold capitalize truncate">
+                                        {topClassification.label}
+                                    </span>
+                            </button>
+                            <span className="text-xs font-mono bg-white/20 px-1.5 py-0.5 rounded-full">
+                                    {`${(topClassification.score * 100).toFixed(0)}%`}
+                                </span>
+                          </div>
+                      )}
+                    </div>
+                )}
+                <p className="text-white text-xs truncate" title={photo.id.split(/[\\/]/).pop()}>
+                  {photo.id.split(/[\\/]/).pop()}
+                </p>
+              </div>
+            </>
         )}
-
-        <StatusPill status={photo.status} />
-
-        <div className="absolute top-2 right-2 flex items-center gap-2 z-10">
-          <button
-              onClick={(e) => { e.stopPropagation(); onToggleSave(photo.id); }}
-              className="p-1.5 bg-black/40 rounded-full text-white hover:text-red-400 transition-colors"
-              title={photo.isSaved ? "Unsave photo" : "Save for later"}
-          >
-            <Heart className={`w-4 h-4 transition-all ${photo.isSaved ? 'fill-red-400' : 'fill-transparent'}`} />
-          </button>
-          {photo.selected && (
-              <div className="bg-accent text-white rounded-full p-1">
-                <Check className="w-4 h-4" />
-              </div>
-          )}
-        </div>
-
-
-        <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/70 to-transparent">
-          {(topDetection || topClassification) && (
-              <div className="mb-1 space-y-1">
-                {topDetection && (
-                    <div className="flex items-center justify-between text-white">
-                      <button
-                          onClick={(e) => handleLabelClick(e, topDetection.label)}
-                          className="flex items-center gap-1.5 overflow-hidden text-left hover:underline focus:outline-none focus:underline"
-                          title={`Filter by "${topDetection.label}"`}
-                      >
-                        <Boxes className="w-3 h-3 text-white/90 shrink-0" />
-                        <span className="text-sm font-bold capitalize truncate">
-                                {topDetection.label}
-                            </span>
-                      </button>
-                      <span className="text-xs font-mono bg-accent/20 px-1.5 py-0.5 rounded-full">
-                            {`${(topDetection.score * 100).toFixed(0)}%`}
-                        </span>
-                    </div>
-                )}
-                {topClassification && (
-                    <div className="flex items-center justify-between text-white">
-                      <button
-                          onClick={(e) => handleLabelClick(e, topClassification.label)}
-                          className="flex items-center gap-1.5 overflow-hidden text-left hover:underline focus:outline-none focus:underline"
-                          title={`Filter by "${topClassification.label}"`}
-                      >
-                        <Tag className="w-3 h-3 text-white/90 shrink-0" />
-                        <span className="text-sm font-bold capitalize truncate">
-                                {topClassification.label}
-                            </span>
-                      </button>
-                      <span className="text-xs font-mono bg-white/20 px-1.5 py-0.5 rounded-full">
-                            {`${(topClassification.score * 100).toFixed(0)}%`}
-                        </span>
-                    </div>
-                )}
-              </div>
-          )}
-          <p className="text-white text-xs truncate" title={photo.id.split(/[\\/]/).pop()}>
-            {photo.id.split(/[\\/]/).pop()}
-          </p>
-        </div>
       </div>
   );
 };

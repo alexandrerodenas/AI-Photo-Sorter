@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useCallback, useMemo, useRef } from 'react';
 import type { UserProfile, Photo, FilterRule, Prediction } from '../services/types.ts';
 import { PhotoStatus } from '../services/types.ts';
 import { useFileSystem } from './useFileSystem.ts';
@@ -33,6 +33,16 @@ export const usePhotoManager = ({ userProfile, onProfileUpdate, filterLabel }: U
 
     const [isolateSaved, setIsolateSaved] = useState(false);
     const savedPhotos = useMemo(() => Array.from(photos.values()).filter(p => p.isSaved), [photos]);
+
+    const processingQueueCount = useMemo(() => {
+        let count = 0;
+        for (const photo of photos.values()) {
+            if (photo.status === PhotoStatus.QUEUED || photo.status === PhotoStatus.ANALYZING) {
+                count++;
+            }
+        }
+        return count;
+    }, [photos]);
 
     // --- Sub-hook for File System Logic ---
     const {
@@ -344,5 +354,6 @@ export const usePhotoManager = ({ userProfile, onProfileUpdate, filterLabel }: U
         handleConfirmDelete,
         handleConfirmDeleteKeepSaved,
         handleCancelDelete,
+        processingQueueCount,
     };
 };

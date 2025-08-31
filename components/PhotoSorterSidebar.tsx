@@ -50,6 +50,7 @@ interface PhotoSorterSidebarProps {
   onMoveSavedPhotos: () => void;
   isOpen: boolean;
   onToggle: () => void;
+  processingQueueCount: number;
 }
 
 const PhotoSorterSidebar: React.FC<PhotoSorterSidebarProps> = ({
@@ -80,7 +81,8 @@ const PhotoSorterSidebar: React.FC<PhotoSorterSidebarProps> = ({
                                                                  onToggleIsolateSaved,
                                                                  onMoveSavedPhotos,
                                                                  isOpen,
-                                                                 onToggle
+                                                                 onToggle,
+                                                                 processingQueueCount
                                                                }) => {
 
   const existingRuleLabels = useMemo(() => new Set([
@@ -204,6 +206,16 @@ const PhotoSorterSidebar: React.FC<PhotoSorterSidebarProps> = ({
               <span>Saved</span>
               <span className="px-2 py-0.5 bg-pink-500/20 text-pink-500 rounded-full">{savedPhotoCount}</span>
             </div>
+
+            {processingQueueCount > 0 && (
+                <div className="flex justify-between items-center text-sm font-medium mt-2">
+                  <span>Processing</span>
+                  <span className="px-2 py-0.5 bg-blue-500/20 text-blue-500 rounded-full flex items-center gap-1.5">
+                        <Spinner className="w-3 h-3 text-blue-500" />
+                    {processingQueueCount}
+                    </span>
+                </div>
+            )}
 
             <ModelLoadingIndicator status={modelsLoadState} />
 

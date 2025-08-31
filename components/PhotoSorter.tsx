@@ -64,6 +64,7 @@ const PhotoSorter: React.FC<PhotoSorterProps> = ({ userProfile, onProfileUpdate 
     handleConfirmDelete,
     handleConfirmDeleteKeepSaved,
     handleCancelDelete,
+    processingQueueCount,
   } = usePhotoManager({ userProfile, onProfileUpdate, filterLabel });
 
 
@@ -102,6 +103,7 @@ const PhotoSorter: React.FC<PhotoSorterProps> = ({ userProfile, onProfileUpdate 
             isolateSaved={isolateSaved}
             onToggleIsolateSaved={handleToggleIsolateSaved}
             onMoveSavedPhotos={handleMoveSavedPhotos}
+            processingQueueCount={processingQueueCount}
         />
 
         {isSidebarOpen && (

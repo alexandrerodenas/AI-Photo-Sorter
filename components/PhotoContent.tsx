@@ -94,10 +94,18 @@ const PhotoContent: React.FC<PhotoContentProps> = ({
 
   const filteredPhotosForGrid = useMemo(() => {
     const photosArray = Array.from(photosToShow.values());
-    if (!filterLabel.trim()) return photosArray;
+
+    // First, filter out unprocessed photos
+    const processedPhotos = photosArray.filter(p => p.status !== PhotoStatus.QUEUED && p.status !== PhotoStatus.ANALYZING);
+
+    if (!filterLabel.trim()) {
+      return processedPhotos; // Return all processed if no filter
+    }
+
     const lowercasedFilter = filterLabel.toLowerCase();
-    return photosArray.filter(p =>
-            p.status === PhotoStatus.ANALYZED && (
+    // Then apply label filter on the processed photos
+    return processedPhotos.filter(p =>
+            (p.status === PhotoStatus.ANALYZED || p.status === PhotoStatus.UNCATEGORIZED) && (
                 p.classifications.some(pred => pred.label.toLowerCase().includes(lowercasedFilter)) ||
                 p.detections.some(pred => pred.label.toLowerCase().includes(lowercasedFilter))
             )
