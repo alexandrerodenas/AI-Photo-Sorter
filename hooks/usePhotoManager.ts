@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import type { UserProfile, Photo, FilterRule, Prediction } from '../services/types.ts';
 import { PhotoStatus } from '../services/types.ts';
 import { useFileSystem } from './useFileSystem.ts';
@@ -15,7 +15,7 @@ interface UsePhotoManagerProps {
 export const usePhotoManager = ({ userProfile, onProfileUpdate, filterLabel }: UsePhotoManagerProps) => {
     const [photos, setPhotos] = useState<Map<string, Photo>>(new Map());
     const [statusMessage, setStatusMessage] = useState<string>('Ready to organize some photos! 🥳');
-    const [confirmDeleteState, setConfirmDeleteState] = useState<{isOpen: boolean, savedCount: number}>({ isOpen: false, savedCount: 0 });
+    const [confirmDeleteState, setConfirmDeleteState] = useState<{isOpen: boolean, photosToDelete: Photo[]}>({ isOpen: false, photosToDelete: [] });
 
     const directoryHandleRef = useRef<FileSystemDirectoryHandle | null>(null);
     const userProfileRef = useRef(userProfile);
@@ -102,6 +102,26 @@ export const usePhotoManager = ({ userProfile, onProfileUpdate, filterLabel }: U
         });
     }, [setPhotos]);
 
+    const handleBulkSave = useCallback((photosToSave: Photo[]) => {
+        if (photosToSave.length === 0) return;
+
+        // If all photos are already saved, unsave all. Otherwise, save all.
+        const allAreSaved = photosToSave.every(p => p.isSaved);
+
+        setPhotos(prev => {
+            const newPhotos = new Map(prev);
+            photosToSave.forEach(photo => {
+                const current = newPhotos.get(photo.id);
+                if (current) {
+                    newPhotos.set(photo.id, { ...current, isSaved: !allAreSaved });
+                }
+            });
+            return newPhotos;
+        });
+
+        setStatusMessage(`${allAreSaved ? 'Unsaved' : 'Saved'} ${photosToSave.length} photo(s).`);
+    }, [setPhotos, setStatusMessage]);
+
     const handleToggleIsolateSaved = useCallback(() => {
         if (savedPhotos.length > 0 || isolateSaved) {
             setIsolateSaved(prev => !prev);
@@ -112,46 +132,36 @@ export const usePhotoManager = ({ userProfile, onProfileUpdate, filterLabel }: U
         handleMoveSaved(savedPhotos, userProfileRef.current.savedFolderName || 'Pixo Saved');
     }, [savedPhotos, userProfileRef, handleMoveSaved]);
 
-    const handleRequestDelete = useCallback(() => {
-        if (selectedPhotos.length === 0) return;
+    const handleRequestDelete = useCallback((photos: Photo[] = selectedPhotos) => {
+        if (photos.length === 0) return;
 
-        const savedInSelection = selectedPhotos.filter(p => p.isSaved);
+        const savedInSelection = photos.filter(p => p.isSaved);
 
         if (savedInSelection.length > 0) {
-            setConfirmDeleteState({ isOpen: true, savedCount: savedInSelection.length });
+            setConfirmDeleteState({ isOpen: true, photosToDelete: photos });
         } else {
             // No saved photos in selection, ask for simple confirmation
-            if (window.confirm(`Are you sure you want to permanently delete ${selectedPhotos.length} photo(s)? This action cannot be undone.`)) {
-                handleDeletePhotos(selectedPhotos);
+            if (window.confirm(`Are you sure you want to permanently delete ${photos.length} photo(s)? This action cannot be undone.`)) {
+                handleDeletePhotos(photos);
             }
         }
     }, [selectedPhotos, handleDeletePhotos]);
 
     const handleConfirmDelete = useCallback(() => {
-        handleDeletePhotos(selectedPhotos);
-        setConfirmDeleteState({ isOpen: false, savedCount: 0 });
-    }, [selectedPhotos, handleDeletePhotos]);
+        handleDeletePhotos(confirmDeleteState.photosToDelete);
+        setConfirmDeleteState({ isOpen: false, photosToDelete: [] });
+    }, [confirmDeleteState.photosToDelete, handleDeletePhotos]);
 
     const handleConfirmDeleteKeepSaved = useCallback(() => {
-        const photosToDelete = selectedPhotos.filter(p => !p.isSaved);
+        const photosToDelete = confirmDeleteState.photosToDelete.filter(p => !p.isSaved);
         if (photosToDelete.length > 0) {
             handleDeletePhotos(photosToDelete);
         }
-        // Also deselect the saved ones that were not deleted
-        setPhotos(prev => {
-            const newPhotos = new Map(prev);
-            selectedPhotos.forEach(p => {
-                if (p.isSaved && newPhotos.has(p.id)) {
-                    newPhotos.set(p.id, { ...p, selected: false });
-                }
-            });
-            return newPhotos;
-        });
-        setConfirmDeleteState({ isOpen: false, savedCount: 0 });
-    }, [selectedPhotos, handleDeletePhotos, setPhotos]);
+        setConfirmDeleteState({ isOpen: false, photosToDelete: [] });
+    }, [confirmDeleteState.photosToDelete, handleDeletePhotos]);
 
     const handleCancelDelete = useCallback(() => {
-        setConfirmDeleteState({ isOpen: false, savedCount: 0 });
+        setConfirmDeleteState({ isOpen: false, photosToDelete: [] });
     }, []);
 
 
@@ -355,5 +365,6 @@ export const usePhotoManager = ({ userProfile, onProfileUpdate, filterLabel }: U
         handleConfirmDeleteKeepSaved,
         handleCancelDelete,
         processingQueueCount,
+        handleBulkSave,
     };
 };

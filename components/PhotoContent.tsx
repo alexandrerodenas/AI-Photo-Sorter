@@ -50,6 +50,8 @@ interface PhotoContentProps {
   thumbnailSize: ThumbnailSize;
   onFilterChange: (label: string) => void;
   onToggleSavePhoto: (id: string) => void;
+  onRequestDelete: (photos: Photo[]) => void;
+  onBulkSave: (photos: Photo[]) => void;
 }
 
 const PhotoContent: React.FC<PhotoContentProps> = ({
@@ -63,6 +65,8 @@ const PhotoContent: React.FC<PhotoContentProps> = ({
                                                      thumbnailSize,
                                                      onFilterChange,
                                                      onToggleSavePhoto,
+                                                     onRequestDelete,
+                                                     onBulkSave,
                                                    }) => {
   const [viewMode, setViewMode] = useState<'grid' | 'folder'>('grid');
 
@@ -162,7 +166,7 @@ const PhotoContent: React.FC<PhotoContentProps> = ({
       return <PhotoGrid photos={filteredPhotosForGrid} onSelectPhoto={onSelectPhoto} onViewPhoto={onViewPhoto} thumbnailSize={thumbnailSize} onFilterChange={onFilterChange} onToggleSavePhoto={onToggleSavePhoto} />;
     }
 
-    return <FolderView photos={photosToShow} onSelectPhoto={onSelectPhoto} onViewPhoto={onViewPhoto} thumbnailSize={thumbnailSize} onFilterChange={onFilterChange} onToggleSave={onToggleSavePhoto} />;
+    return <FolderView photos={photosToShow} onSelectPhoto={onSelectPhoto} onViewPhoto={onViewPhoto} thumbnailSize={thumbnailSize} onFilterChange={onFilterChange} onToggleSave={onToggleSavePhoto} onRequestDelete={onRequestDelete} onBulkSave={onBulkSave} />;
   }
 
   return (

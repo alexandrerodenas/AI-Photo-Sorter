@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import type { Photo, ThumbnailSize } from '../services/types.ts';
 import { PhotoStatus } from '../services/types.ts';
 import PhotoCard from './PhotoCard.tsx';
-import { ChevronRight, Folder, ArrowDownAZ, ArrowDown10, Tag, Boxes } from 'lucide-react';
+import { ChevronRight, Folder, ArrowDownAZ, ArrowDown10, Tag, Boxes, Heart, Trash2 } from 'lucide-react';
 
 interface FolderViewProps {
   photos: Map<string, Photo>;
@@ -11,9 +11,11 @@ interface FolderViewProps {
   thumbnailSize: ThumbnailSize;
   onFilterChange: (label: string) => void;
   onToggleSave: (id: string) => void;
+  onRequestDelete: (photos: Photo[]) => void;
+  onBulkSave: (photos: Photo[]) => void;
 }
 
-const FolderView: React.FC<FolderViewProps> = ({ photos, onSelectPhoto, onViewPhoto, thumbnailSize, onFilterChange, onToggleSave }) => {
+const FolderView: React.FC<FolderViewProps> = ({ photos, onSelectPhoto, onViewPhoto, thumbnailSize, onFilterChange, onToggleSave, onRequestDelete, onBulkSave }) => {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set([PhotoStatus.ANALYZED, PhotoStatus.UNCATEGORIZED]));
   const [sortOrder, setSortOrder] = useState<'alpha' | 'count'>('alpha');
   const [groupBy, setGroupBy] = useState<'classification' | 'detection'>('classification');
@@ -195,13 +197,32 @@ const FolderView: React.FC<FolderViewProps> = ({ photos, onSelectPhoto, onViewPh
                           Object.entries(content as Record<string, Photo[]>).map(([label, labelPhotos]) => {
                             const folderKey = `${status}-${label}`;
                             const isLabelExpanded = expandedFolders.has(folderKey);
+                            const allInCategorySaved = labelPhotos.length > 0 && labelPhotos.every(p => p.isSaved);
                             return (
                                 <div key={folderKey}>
-                                  <div onClick={() => toggleFolder(folderKey)} className="flex items-center gap-2 p-1 rounded-md hover:bg-gray-200/60 dark:hover:bg-gray-700/60 cursor-pointer transition-colors">
-                                    <ChevronRight className={`w-4 h-4 text-gray-500 transition-transform ${isLabelExpanded ? 'rotate-90' : ''}`} />
-                                    <Folder className="w-5 h-5 text-gray-400 dark:text-gray-500" />
-                                    <h4 className="font-semibold">{label}</h4>
-                                    <span className="text-xs text-gray-500 dark:text-gray-400">({labelPhotos.length})</span>
+                                  <div className="group flex items-center justify-between gap-2 p-1 rounded-md hover:bg-gray-200/60 dark:hover:bg-gray-700/60 transition-colors">
+                                    <div onClick={() => toggleFolder(folderKey)} className="flex items-center gap-2 flex-grow cursor-pointer">
+                                      <ChevronRight className={`w-4 h-4 text-gray-500 transition-transform ${isLabelExpanded ? 'rotate-90' : ''}`} />
+                                      <Folder className="w-5 h-5 text-gray-400 dark:text-gray-500" />
+                                      <h4 className="font-semibold">{label}</h4>
+                                      <span className="text-xs text-gray-500 dark:text-gray-400">({labelPhotos.length})</span>
+                                    </div>
+                                    <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <button
+                                          onClick={(e) => { e.stopPropagation(); onBulkSave(labelPhotos); }}
+                                          className="p-1.5 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600"
+                                          title={allInCategorySaved ? 'Unsave all in category' : 'Save all in category'}
+                                      >
+                                        <Heart className={`w-4 h-4 text-pink-500 transition-colors ${allInCategorySaved ? 'fill-current' : ''}`} />
+                                      </button>
+                                      <button
+                                          onClick={(e) => { e.stopPropagation(); onRequestDelete(labelPhotos); }}
+                                          className="p-1.5 rounded-full hover:bg-red-200 dark:hover:bg-red-800/50"
+                                          title="Delete all in category"
+                                      >
+                                        <Trash2 className="w-4 h-4 text-red-600" />
+                                      </button>
+                                    </div>
                                   </div>
                                   {isLabelExpanded && (
                                       <div className={`pl-7 pt-2 grid ${sizeClassesAnalyzed[thumbnailSize]} gap-4`}>

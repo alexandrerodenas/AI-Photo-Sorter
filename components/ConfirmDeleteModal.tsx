@@ -6,7 +6,7 @@ interface ConfirmDeleteModalProps {
   onClose: () => void;
   onConfirm: () => void;
   onConfirmKeepSaved: () => void;
-  selectedCount: number;
+  deleteCount: number;
   savedCount: number;
 }
 
@@ -15,10 +15,12 @@ const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
                                                                  onClose,
                                                                  onConfirm,
                                                                  onConfirmKeepSaved,
-                                                                 selectedCount,
+                                                                 deleteCount,
                                                                  savedCount
                                                                }) => {
   if (!isOpen) return null;
+
+  const unsavedCount = deleteCount - savedCount;
 
   return (
       <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center" onClick={onClose}>
@@ -37,7 +39,7 @@ const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
           </div>
           <div className="p-6 text-gray-700 dark:text-gray-300">
             <p className="text-lg">
-              You are about to permanently delete <strong className="font-bold">{selectedCount}</strong> photo(s).
+              You are about to permanently delete <strong className="font-bold">{deleteCount}</strong> photo(s).
             </p>
             <div className="mt-4 p-4 bg-yellow-100 dark:bg-yellow-900/40 border-l-4 border-yellow-500 text-yellow-800 dark:text-yellow-200 rounded-r-lg">
               <p className="font-semibold">
@@ -48,24 +50,30 @@ const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
               </p>
             </div>
           </div>
-          <div className="p-6 bg-gray-50 dark:bg-gray-800/50 flex flex-col sm:flex-row justify-end items-center gap-4 rounded-b-lg border-t border-gray-200 dark:border-gray-700">
+          <div className="p-6 bg-gray-50 dark:bg-gray-800/50 flex flex-col sm:flex-row justify-end items-center gap-3 rounded-b-lg border-t border-gray-200 dark:border-gray-700">
             <button
                 onClick={onClose}
-                className="w-full sm:w-auto px-6 py-2 bg-gray-200 dark:bg-gray-600 font-semibold rounded-md hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
+                className="w-full sm:w-auto px-6 py-2 bg-gray-200 dark:bg-gray-600 font-semibold rounded-md hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors whitespace-nowrap"
             >
               Cancel
             </button>
-            <button
-                onClick={onConfirmKeepSaved}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2 bg-green-600 text-white font-semibold rounded-md hover:bg-green-700 transition"
-            >
-              <ShieldCheck className="w-5 h-5"/> Delete, but Keep Saved
-            </button>
+
+            {unsavedCount > 0 && (
+                <button
+                    onClick={onConfirmKeepSaved}
+                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2 bg-green-600 text-white font-semibold rounded-md hover:bg-green-700 transition whitespace-nowrap"
+                >
+                  <ShieldCheck className="w-5 h-5"/>
+                  <span>Delete {unsavedCount} Unsaved</span>
+                </button>
+            )}
+
             <button
                 onClick={onConfirm}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2 bg-red-600 text-white font-semibold rounded-md hover:bg-red-700 transition"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2 text-red-600 border border-red-600 font-semibold rounded-md hover:bg-red-600 hover:text-white transition whitespace-nowrap"
             >
-              <Trash2 className="w-5 h-5"/> Delete All
+              <Trash2 className="w-5 h-5"/>
+              <span>Delete All {deleteCount}</span>
             </button>
           </div>
         </div>

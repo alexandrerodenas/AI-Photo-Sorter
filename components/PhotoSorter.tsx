@@ -65,6 +65,7 @@ const PhotoSorter: React.FC<PhotoSorterProps> = ({ userProfile, onProfileUpdate 
     handleConfirmDeleteKeepSaved,
     handleCancelDelete,
     processingQueueCount,
+    handleBulkSave,
   } = usePhotoManager({ userProfile, onProfileUpdate, filterLabel });
 
 
@@ -87,7 +88,7 @@ const PhotoSorter: React.FC<PhotoSorterProps> = ({ userProfile, onProfileUpdate 
             onSelectAll={handleSelectAll}
             onClearSelection={handleClearSelection}
             onApplyRules={handleApplyRulesManually}
-            onDeleteSelected={handleRequestDelete}
+            onDeleteSelected={() => handleRequestDelete()}
             selectedPhotoCount={selectedPhotos.length}
             totalPhotoCount={photos.size}
             statusMessage={statusMessage}
@@ -140,6 +141,8 @@ const PhotoSorter: React.FC<PhotoSorterProps> = ({ userProfile, onProfileUpdate 
               isolateSaved={isolateSaved}
               thumbnailSize={userProfile.thumbnailSize ?? 'M'}
               onToggleSavePhoto={handleToggleSavePhoto}
+              onRequestDelete={handleRequestDelete}
+              onBulkSave={handleBulkSave}
           />
         </div>
 
@@ -153,8 +156,8 @@ const PhotoSorter: React.FC<PhotoSorterProps> = ({ userProfile, onProfileUpdate 
             onClose={handleCancelDelete}
             onConfirm={handleConfirmDelete}
             onConfirmKeepSaved={handleConfirmDeleteKeepSaved}
-            selectedCount={selectedPhotos.length}
-            savedCount={confirmDeleteState.savedCount}
+            deleteCount={confirmDeleteState.photosToDelete.length}
+            savedCount={confirmDeleteState.photosToDelete.filter(p => p.isSaved).length}
         />
 
         <ProfileSettingsModal
