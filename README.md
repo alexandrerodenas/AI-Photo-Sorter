@@ -1,5 +1,6 @@
+
 <p align="center">
-  <img src="public/logo.png" alt="Pixo Logo" width="128">
+  <img src="logo.png" alt="Pixo Logo" width="128">
 </p>
 
 # Pixo
@@ -8,7 +9,7 @@ Organize your photos effortlessly.
 
 Pixo is a powerful, privacy-focused web application that helps you automatically organize your local photos using artificial intelligence, right in your browser. No uploads, no servers, no data collection—your photos and your data stay on your machine.
 
-This tool leverages the browser's File System Access API to read your photo directories and uses TensorFlow.js to run two powerful AI models locally for comprehensive image analysis.
+This tool leverages the browser's File System Access API to read your photo directories and uses TensorFlow.js to run powerful AI models locally for comprehensive image analysis.
 
 ## ✨ Key Features
 
@@ -18,6 +19,11 @@ This tool leverages the browser's File System Access API to read your photo dire
     - **Scene Classification**: Utilizes a MobileNet model to understand the overall context of your photos (e.g., "beach," "forest," "cityscape").
     - **Object Detection**: Employs a COCO-SSD model to identify and locate common objects within your photos (e.g., "person," "car," "dog").
 - **High-Performance Backend**: Automatically uses the best available AI backend for your browser, supporting **WebGPU**, **WASM**, and **WebGL** for maximum speed.
+
+### Smart Duplicate Detection
+- **AI-Powered Matching**: Goes beyond filename matching. Pixo extracts semantic embeddings from images to detect **exact duplicates**, **near-duplicates** (resized, compressed), and **burst photos** (similar frames taken in sequence).
+- **GPU Accelerated**: Performs matrix calculations on your graphics card to compare thousands of photos in seconds.
+- **Intelligent Cleanup**: Automatically groups similar photos and identifies the "best" version to keep (based on resolution, quality, and age), auto-selecting the redundant copies for easy deletion.
 
 ### Intuitive User Interface
 - **Dual View Modes**:
@@ -30,6 +36,10 @@ This tool leverages the browser's File System Access API to read your photo dire
 - **Dark Mode**: Sleek and eye-friendly dark theme that respects your system's settings.
 
 ### Powerful Organization & Automation
+- **Save for Later**:
+    - **Mark Favorites**: Click the heart icon on any photo to mark it as "saved".
+    - **Isolate Saved Photos**: Instantly filter your view to see only your saved photos.
+    - **Move Saved Photos**: Permanently move all your saved photos to a dedicated folder on your hard drive (e.g., "Pixo Saved"), removing them from the main view.
 - **Advanced Custom Rules**:
     - Create powerful, context-specific rules in your user profile to automatically select photos.
     - **Classification Rules**: `SELECT photos with "beach" classification with confidence > 80%`.
@@ -49,21 +59,48 @@ This tool leverages the browser's File System Access API to read your photo dire
 
 ### Profile Management
 - **Personalized Experience**: The app greets you by your name, which you can set in your profile.
+- **Custom "Saved" Folder**: Customize the name of the folder where your saved photos are moved (e.g., change "Pixo Saved" to "My Favorites").
 - **Import/Export Profile**: Save your complete user profile, including all your custom classification and detection rules, to a JSON file. This is great for backing up your settings or sharing them across devices.
 
 ## 🚀 How to Use
 
+### Method 1: Direct Browser
 1.  **Launch the App**: Open the `index.html` file in a modern web browser that supports the File System Access API (e.g., Google Chrome, Microsoft Edge).
-2.  **Set Up Your Profile**: On your first visit, you'll be prompted to enter your name to create a user profile with some helpful default rules.
-3.  **Load Photos**: Click the **"Select Directory"** button in the sidebar to choose a folder of photos from your computer.
-4.  **Let the AI Work**: The application will begin scanning and analyzing your photos using both AI models. You can watch the progress in real-time.
-5.  **Organize**:
-    - Use the **Grid View** or **Folder View** to browse your photos.
-    - Use the **filter bar** to search for specific content or objects.
-    - **Single-click** to select photos, and use the action buttons (`Apply Rules`, `Isolate Selection`, `Delete Selected`) to manage them.
-6.  **Customize (Optional)**:
+2.  **Follow Onboarding**: Enter your name and set up your initial rules.
+3.  **Start Organizing**: Select a directory to begin.
+
+### Method 2: 🐳 Docker
+You can easily run Pixo using Docker to serve the application locally.
+
+1.  **Build the image**:
+    ```bash
+    docker build -t pixo .
+    ```
+
+2.  **Run the container**:
+    ```bash
+    docker run -d -p 8080:80 pixo
+    ```
+
+3.  **Access the app**:
+    Open your browser and navigate to [http://localhost:8080](http://localhost:8080).
+
+> **Note**: The File System Access API requires a secure context. `localhost` is treated as secure by browsers, so the app will function correctly when accessed via the Docker container on your local machine.
+
+## 🕹 Usage Guide
+
+1.  **Set Up Your Profile**: On your first visit, you'll be prompted to enter your name to create a user profile with some helpful default rules.
+2.  **Load Photos**: Click the **"Select Directory"** button in the sidebar to choose a folder of photos from your computer.
+3.  **Let the AI Work**: The application will begin scanning and analyzing your photos using both AI models. You can watch the progress in real-time.
+4.  **Organize**:
+    - **Find Duplicates**: Click **"Find Duplicates"** to scan your library. Pixo will group duplicates and auto-select the lower-quality versions. Review them in the "Isolate" view and delete them in one click.
+    - **Mark Favorites**: Click the heart icon on photos to mark them for saving.
+    - **Browse & Filter**: Use the Grid/Folder views and the filter bar to find specific content.
+    - **Apply Rules**: Use the "Apply Rules" button to auto-select photos based on your criteria.
+    - **Move/Delete**: Move your hearted photos to a new location or permanently delete selected (or duplicate) photos to free up space.
+5.  **Customize (Optional)**:
     - Click the **settings icon** next to your name to open your profile.
-    - Add custom **classification** and **detection** rules, adjust the **uncertainty threshold**, and manage your preferences.
+    - Add custom **classification** and **detection** rules, adjust the **uncertainty threshold**, change your **"Saved" folder name**, and manage your preferences.
     - Don't forget to **export your profile** to save your settings!
 
 ---
