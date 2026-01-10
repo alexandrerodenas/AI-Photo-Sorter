@@ -1,13 +1,11 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import type { Photo, ThumbnailSize } from '../services/types.ts';
 import { PhotoStatus } from '../services/types.ts';
 import PhotoCard from './PhotoCard.tsx';
 import FolderView from './FolderView.tsx';
 import {
   FolderOpen,
-  LayoutGrid,
-  FolderTree,
   EyeOff,
   Filter,
   Heart,
@@ -57,6 +55,7 @@ interface PhotoContentProps {
   onToggleSavePhoto: (id: string) => void;
   onRequestDelete: (photos: Photo[]) => void;
   onBulkSave: (photos: Photo[]) => void;
+  viewMode: 'grid' | 'folder';
 }
 
 const PhotoContent: React.FC<PhotoContentProps> = ({
@@ -74,8 +73,8 @@ const PhotoContent: React.FC<PhotoContentProps> = ({
                                                      onToggleSavePhoto,
                                                      onRequestDelete,
                                                      onBulkSave,
+                                                     viewMode
                                                    }) => {
-  const [viewMode, setViewMode] = useState<'grid' | 'folder'>('grid');
 
   const photosToShow = useMemo(() => {
     let photosToReturn = photos;
@@ -157,7 +156,7 @@ const PhotoContent: React.FC<PhotoContentProps> = ({
           <div className="flex flex-col items-center justify-center h-full text-center text-gray-500 dark:text-gray-400">
             <FolderOpen className="w-24 h-24 mb-4 text-gray-300 dark:text-gray-600" />
             <h2 className="text-2xl font-semibold">Your workspace is empty</h2>
-            <p className="mt-2 max-w-sm">Click 'Select Directory' on the left to begin your photo organizing adventure!</p>
+            <p className="mt-2 max-w-sm">Click 'Open Folder' in the top bar to begin your photo organizing adventure!</p>
           </div>
       );
     }
@@ -212,33 +211,8 @@ const PhotoContent: React.FC<PhotoContentProps> = ({
   }
 
   return (
-      <main className="flex-1 p-6 flex flex-col">
-        {photos.size > 0 && !isLoading && (
-            <div className="flex justify-end items-center mb-4 flex-shrink-0">
-              <div className="flex items-center p-1 bg-gray-200 dark:bg-gray-700 rounded-lg">
-                <button
-                    onClick={() => setViewMode('grid')}
-                    className={`p-2 rounded-md transition-colors ${viewMode === 'grid' ? 'bg-white dark:bg-gray-800 text-primary shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-gray-800/50'}`}
-                    aria-label="Grid View"
-                    title="Grid View"
-                >
-                  <LayoutGrid className="w-5 h-5" />
-                </button>
-                <button
-                    onClick={() => setViewMode('folder')}
-                    className={`p-2 rounded-md transition-colors ${viewMode === 'folder' ? 'bg-white dark:bg-gray-800 text-primary shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-gray-800/50'}`}
-                    aria-label="Folder View"
-                    title="Folder View"
-                >
-                  <FolderTree className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-        )}
-
-        <div className="flex-1 overflow-y-auto">
-          {renderContent()}
-        </div>
+      <main className="flex-1 p-6 overflow-y-auto">
+        {renderContent()}
       </main>
   );
 };
