@@ -1,3 +1,4 @@
+
 import * as React from 'react';
 import type { UserProfile, Photo } from '../services/types.ts';
 import { PhotoStatus } from '../services/types.ts';
@@ -66,6 +67,9 @@ const PhotoSorter: React.FC<PhotoSorterProps> = ({ userProfile, onProfileUpdate 
     handleCancelDelete,
     processingQueueCount,
     handleBulkSave,
+    handleFindDuplicates,
+    isolateDuplicates,
+    handleToggleIsolateDuplicates,
   } = usePhotoManager({ userProfile, onProfileUpdate, filterLabel });
 
 
@@ -105,6 +109,9 @@ const PhotoSorter: React.FC<PhotoSorterProps> = ({ userProfile, onProfileUpdate 
             onToggleIsolateSaved={handleToggleIsolateSaved}
             onMoveSavedPhotos={handleMoveSavedPhotos}
             processingQueueCount={processingQueueCount}
+            onFindDuplicates={handleFindDuplicates}
+            isolateDuplicates={isolateDuplicates}
+            onToggleIsolateDuplicates={handleToggleIsolateDuplicates}
         />
 
         {isSidebarOpen && (
@@ -139,6 +146,7 @@ const PhotoSorter: React.FC<PhotoSorterProps> = ({ userProfile, onProfileUpdate 
               onViewPhoto={setViewingPhoto}
               isolateSelection={isolateSelection}
               isolateSaved={isolateSaved}
+              isolateDuplicates={isolateDuplicates}
               thumbnailSize={userProfile.thumbnailSize ?? 'M'}
               onToggleSavePhoto={handleToggleSavePhoto}
               onRequestDelete={handleRequestDelete}

@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import type { Photo, ThumbnailSize } from '../services/types.ts';
 import { PhotoStatus } from '../services/types.ts';
@@ -10,6 +11,7 @@ import {
   EyeOff,
   Filter,
   Heart,
+  Copy,
 } from 'lucide-react';
 
 interface PhotoGridProps {
@@ -45,6 +47,7 @@ interface PhotoContentProps {
   filterLabel: string;
   isolateSelection: boolean;
   isolateSaved: boolean;
+  isolateDuplicates: boolean;
   onSelectPhoto: (id: string) => void;
   onViewPhoto: (photo: Photo) => void;
   thumbnailSize: ThumbnailSize;
@@ -60,6 +63,7 @@ const PhotoContent: React.FC<PhotoContentProps> = ({
                                                      filterLabel,
                                                      isolateSelection,
                                                      isolateSaved,
+                                                     isolateDuplicates,
                                                      onSelectPhoto,
                                                      onViewPhoto,
                                                      thumbnailSize,
@@ -72,6 +76,16 @@ const PhotoContent: React.FC<PhotoContentProps> = ({
 
   const photosToShow = useMemo(() => {
     let photosToReturn = photos;
+
+    if (isolateDuplicates) {
+      const isolatedMap = new Map<string, Photo>();
+      for (const [id, photo] of photosToReturn.entries()) {
+        if (photo.duplicateGroupId) {
+          isolatedMap.set(id, photo);
+        }
+      }
+      return isolatedMap;
+    }
 
     if (isolateSaved) {
       const isolatedMap = new Map<string, Photo>();
@@ -94,10 +108,16 @@ const PhotoContent: React.FC<PhotoContentProps> = ({
     }
 
     return photosToReturn;
-  }, [photos, isolateSelection, isolateSaved]);
+  }, [photos, isolateSelection, isolateSaved, isolateDuplicates]);
 
   const filteredPhotosForGrid = useMemo(() => {
     const photosArray = Array.from(photosToShow.values());
+
+    // Sort duplications if active: Group by groupID
+    if (isolateDuplicates) {
+      photosArray.sort((a, b) => (a.duplicateGroupId || '').localeCompare(b.duplicateGroupId || ''));
+      return photosArray;
+    }
 
     // First, filter out unprocessed photos
     const processedPhotos = photosArray.filter(p => p.status !== PhotoStatus.QUEUED && p.status !== PhotoStatus.ANALYZING);
@@ -115,7 +135,7 @@ const PhotoContent: React.FC<PhotoContentProps> = ({
                 p.detections.some(pred => pred.label.toLowerCase().includes(lowercasedFilter))
             )
     );
-  }, [photosToShow, filterLabel]);
+  }, [photosToShow, filterLabel, isolateDuplicates]);
 
 
   const renderContent = () => {
@@ -134,7 +154,11 @@ const PhotoContent: React.FC<PhotoContentProps> = ({
       let message = "No photos match the current criteria. Try adjusting your search.";
       let Icon = Filter;
 
-      if (isolateSelection) {
+      if (isolateDuplicates) {
+        title = "No Duplicates Found";
+        message = "Great news! No duplicates were detected in your current set.";
+        Icon = Copy;
+      } else if (isolateSelection) {
         title = "No Selected Photos";
         message = "You're in isolation mode, but no photos are selected. Clear the isolation to see all photos.";
         Icon = EyeOff;

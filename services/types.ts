@@ -1,3 +1,4 @@
+
 export enum PhotoStatus {
   QUEUED = 'QUEUED',
   ANALYZING = 'ANALYZING',
@@ -21,10 +22,27 @@ export interface Photo {
   selected: boolean;
   isSaved?: boolean;
   customLabel?: string;
+  // Duplicate Detection
+  embedding?: number[]; // 1024-dim vector
+  duplicateGroupId?: string;
+  isDuplicate?: boolean; // If true, this is NOT the best photo in the group
+
   matchedRules?: {
     classification?: string[]; // Names of matching classification rules
     detection?: string[]; // Names of matching detection rules
   };
+  metadata?: {
+    width: number;
+    height: number;
+    size: number;
+    lastModified: number;
+  }
+}
+
+export interface DuplicateGroup {
+  id: string;
+  photos: string[]; // List of Photo IDs
+  bestPhotoId: string;
 }
 
 export interface FilterRule {

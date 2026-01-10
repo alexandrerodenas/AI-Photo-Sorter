@@ -1,3 +1,4 @@
+
 import type { Prediction, ModelsLoadState, ModelLoadStatus } from './types.ts';
 
 // TensorFlow and its models will be loaded dynamically.
@@ -169,4 +170,28 @@ export const detectObjects = async (dataUrl: string): Promise<Prediction[]> => {
     console.error('Error during object detection with COCO-SSD:', error);
     throw error;
   }
+}
+
+// Generates a 1024-dim embedding vector using MobileNet's internal layer
+export const generateEmbedding = async (dataUrl: string): Promise<number[]> => {
+  try {
+    const model = await getClassificationModel();
+    const imageElement = await createImageElement(dataUrl);
+
+    // Use infer(img, true) to get the embedding instead of classification
+    const embeddingTensor = model.infer(imageElement, true);
+    const data = await embeddingTensor.data();
+    embeddingTensor.dispose(); // Cleanup tensor memory immediately
+
+    return Array.from(data);
+  } catch (error) {
+    console.error('Error generating embedding:', error);
+    return [];
+  }
+};
+
+// Expose tf instance for advanced operations in services
+export const getTF = async () => {
+  await initializeTf();
+  return tf;
 }

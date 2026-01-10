@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import type { UserProfile, ModelsLoadState } from '../services/types.ts';
 import {
@@ -16,6 +17,7 @@ import {
   Heart,
   Save,
   ChevronLeft,
+  Copy,
 } from 'lucide-react';
 import { Spinner } from './ui.tsx';
 import AutocompleteInput from './AutocompleteInput.tsx';
@@ -51,6 +53,9 @@ interface PhotoSorterSidebarProps {
   isOpen: boolean;
   onToggle: () => void;
   processingQueueCount: number;
+  onFindDuplicates: () => void;
+  isolateDuplicates: boolean;
+  onToggleIsolateDuplicates: () => void;
 }
 
 const PhotoSorterSidebar: React.FC<PhotoSorterSidebarProps> = ({
@@ -82,7 +87,10 @@ const PhotoSorterSidebar: React.FC<PhotoSorterSidebarProps> = ({
                                                                  onMoveSavedPhotos,
                                                                  isOpen,
                                                                  onToggle,
-                                                                 processingQueueCount
+                                                                 processingQueueCount,
+                                                                 onFindDuplicates,
+                                                                 isolateDuplicates,
+                                                                 onToggleIsolateDuplicates
                                                                }) => {
 
   const existingRuleLabels = useMemo(() => new Set([
@@ -184,6 +192,15 @@ const PhotoSorterSidebar: React.FC<PhotoSorterSidebarProps> = ({
             </div>
             <ActionButton onClick={onApplyRules} disabled={isLoading || noAnalyzedPhotos} title="Apply Manual Rules" openTitle={noAnalyzedPhotos && !isLoading ? "No analyzed photos to apply rules to" : "Apply custom rules to all analyzed photos"} className="bg-secondary text-white hover:bg-secondary-dark" icon={<Zap className="w-5 h-5"/>}>Apply Rules</ActionButton>
             <ActionButton onClick={onCreateRuleFromSelection} disabled={selectedPhotoCount === 0} title="Create Rule from Selection" openTitle={selectedPhotoCount > 0 ? "Create new rules from selected photos" : "Select photos to create rules from"} className="bg-accent text-white hover:bg-accent-dark" icon={<Wand2 className="w-5 h-5"/>}>Create Rule</ActionButton>
+
+            {/* Deduplication Actions */}
+            <div className="border-t border-gray-200 dark:border-gray-700 pt-2 space-y-2">
+              <ActionButton onClick={onFindDuplicates} disabled={isLoading || noAnalyzedPhotos} title="Find Duplicates" className="bg-purple-600 text-white hover:bg-purple-700" icon={<Copy className="w-5 h-5"/>}>Find Duplicates</ActionButton>
+              {isolateDuplicates ? (
+                  <ActionButton onClick={onToggleIsolateDuplicates} disabled={false} title="Show All Photos" className="bg-purple-100 text-purple-700 hover:bg-purple-200 dark:bg-purple-900/50 dark:text-purple-300" icon={<Eye className="w-5 h-5"/>}>Show All</ActionButton>
+              ) : null}
+            </div>
+
             <ActionButton onClick={onToggleIsolateSelection} disabled={selectedPhotoCount === 0 && !isolateSelection} title={isolateSelection ? "Show all photos" : "Isolate Selection"} className="bg-blue-500 text-white hover:bg-blue-600" icon={isolateSelection ? <Eye className="w-5 h-5"/> : <EyeOff className="w-5 h-5"/>}>{isolateSelection ? "Show All" : "Isolate"}</ActionButton>
             <ActionButton onClick={onToggleIsolateSaved} disabled={savedPhotoCount === 0 && !isolateSaved} title={isolateSaved ? "Show all photos" : `Isolate Saved (${savedPhotoCount})`} className="bg-pink-500 text-white hover:bg-pink-600" icon={<Heart className="w-5 h-5 fill-current"/>}>{isolateSaved ? "Show All" : `Isolate (${savedPhotoCount})`}</ActionButton>
             <ActionButton onClick={onMoveSavedPhotos} disabled={savedPhotoCount === 0} title={`Move Saved (${savedPhotoCount})`} className="bg-green-600 text-white hover:bg-green-700" icon={<Save className="w-5 h-5"/>}>{`Move (${savedPhotoCount})`}</ActionButton>

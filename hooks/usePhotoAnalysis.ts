@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { UserProfile, Photo, FilterRule, Prediction, ModelsLoadState } from '../services/types.ts';
 import { PhotoStatus } from '../services/types.ts';
@@ -9,7 +10,6 @@ export const usePhotoAnalysis = (
     setPhotos: React.Dispatch<React.SetStateAction<Map<string, Photo>>>,
     userProfileRef: React.RefObject<UserProfile>,
     applyRules: (predictions: Prediction[], rules: FilterRule[]) => string[],
-    setStatusMessage: (message: string) => void,
 ) => {
   const [tfBackend, setTfBackend] = useState<string | null>(null);
   const [modelsLoadState, setModelsLoadState] = useState<ModelsLoadState>({ classification: 'idle', detection: 'idle' });
@@ -33,16 +33,28 @@ export const usePhotoAnalysis = (
 
     try {
       // We need to fetch the full data binary for analysis.
-      const file = await (await fetch(photoToAnalyze.objectURL)).blob();
+      const fileBlob = await (await fetch(photoToAnalyze.objectURL)).blob();
       const dataUrl = await new Promise<string>((resolve) => {
         const reader = new FileReader();
         reader.onload = () => resolve(reader.result as string);
-        reader.readAsDataURL(file);
+        reader.readAsDataURL(fileBlob);
       });
 
-      const [classifications, detections] = await Promise.all([
+      // Extract metadata (Image object loading needed for dims)
+      const img = new Image();
+      img.src = dataUrl;
+      await new Promise((resolve) => { img.onload = resolve; });
+      const metadata = {
+        width: img.naturalWidth,
+        height: img.naturalHeight,
+        size: fileBlob.size,
+        lastModified: 0 // File System Handle usually provides this, not the blob fetch directly here, but we can't easily access the handle here without passing it. Ignoring for now or defaulting.
+      };
+
+      const [classifications, detections, embedding] = await Promise.all([
         api.classifyImage(dataUrl),
-        api.detectObjects(dataUrl)
+        api.detectObjects(dataUrl),
+        api.generateEmbedding(dataUrl)
       ]);
 
       if (!tfBackend) setTfBackend(api.getTfBackend());
@@ -76,6 +88,8 @@ export const usePhotoAnalysis = (
             status: finalStatus,
             classifications,
             detections,
+            embedding,
+            metadata: { ...metadata, lastModified: Date.now() }, // Fallback timestamp
             customLabel: matchedCustomLabel,
           };
 
