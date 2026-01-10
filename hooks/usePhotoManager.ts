@@ -38,7 +38,11 @@ export const usePhotoManager = ({ userProfile, onProfileUpdate, filterLabel }: U
   const [isolateDuplicates, setIsolateDuplicates] = useState(false);
   const [duplicateCount, setDuplicateCount] = useState(0);
 
+  // Blur Isolation State
+  const [isolateBlurry, setIsolateBlurry] = useState(false);
+
   const savedPhotos = useMemo(() => Array.from(photos.values()).filter(p => p.isSaved), [photos]);
+  const blurryPhotos = useMemo(() => Array.from(photos.values()).filter(p => p.blurLevel === 'blurry'), [photos]);
 
   const processingQueueCount = useMemo(() => {
     let count = 0;
@@ -78,7 +82,7 @@ export const usePhotoManager = ({ userProfile, onProfileUpdate, filterLabel }: U
   const {
     tfBackend,
     modelsLoadState,
-  } = usePhotoAnalysis(photos, setPhotos, userProfileRef, applyRules);
+  } = usePhotoAnalysis(photos, setPhotos, userProfileRef, applyRules, setStatusMessage);
 
   // --- Derived State ---
   const { allAvailableClassificationLabels, allAvailableDetectionLabels, allAvailableLabels } = useMemo(() => {
@@ -133,18 +137,39 @@ export const usePhotoManager = ({ userProfile, onProfileUpdate, filterLabel }: U
 
   const handleToggleIsolateSaved = useCallback(() => {
     if (savedPhotos.length > 0 || isolateSaved) {
-      setIsolateSaved(prev => !prev);
-      if (!isolateSaved) setIsolateDuplicates(false); // Mutually exclusive
+      const newState = !isolateSaved;
+      setIsolateSaved(newState);
+      if (newState) {
+        setIsolateDuplicates(false);
+        setIsolateBlurry(false);
+        if (isolateSelection) handleToggleIsolateSelection();
+      }
     }
-  }, [savedPhotos.length, isolateSaved]);
+  }, [savedPhotos.length, isolateSaved, isolateSelection, handleToggleIsolateSelection]);
 
   const handleToggleIsolateDuplicates = useCallback(() => {
     if (duplicateCount > 0 || isolateDuplicates) {
-      setIsolateDuplicates(prev => !prev);
-      if (!isolateDuplicates) setIsolateSaved(false); // Mutually exclusive
-      if (!isolateDuplicates) handleToggleIsolateSelection(); // Turn off selection isolation if on
+      const newState = !isolateDuplicates;
+      setIsolateDuplicates(newState);
+      if (newState) {
+        setIsolateSaved(false);
+        setIsolateBlurry(false);
+        if (isolateSelection) handleToggleIsolateSelection();
+      }
     }
-  }, [duplicateCount, isolateDuplicates, handleToggleIsolateSelection]);
+  }, [duplicateCount, isolateDuplicates, isolateSelection, handleToggleIsolateSelection]);
+
+  const handleToggleIsolateBlurry = useCallback(() => {
+    if (blurryPhotos.length > 0 || isolateBlurry) {
+      const newState = !isolateBlurry;
+      setIsolateBlurry(newState);
+      if (newState) {
+        setIsolateSaved(false);
+        setIsolateDuplicates(false);
+        if (isolateSelection) handleToggleIsolateSelection();
+      }
+    }
+  }, [blurryPhotos.length, isolateBlurry, isolateSelection, handleToggleIsolateSelection]);
 
   const handleMoveSavedPhotos = useCallback(() => {
     handleMoveSaved(savedPhotos, userProfileRef.current.savedFolderName || 'Pixo Saved');
@@ -288,13 +313,17 @@ export const usePhotoManager = ({ userProfile, onProfileUpdate, filterLabel }: U
       });
 
       setIsolateDuplicates(true); // Auto switch to duplicates view
+      setIsolateSaved(false); // Reset others
+      setIsolateBlurry(false);
+      if (isolateSelection) handleToggleIsolateSelection();
+
       setStatusMessage(`Found ${groups.length} groups of duplicates. Auto-selected ${groups.reduce((acc, g) => acc + g.photos.length - 1, 0)} redundancies.`);
 
     } catch (error) {
       console.error(error);
       setStatusMessage("Error finding duplicates. See console.");
     }
-  }, [photos, setStatusMessage]);
+  }, [photos, setStatusMessage, isolateSelection, handleToggleIsolateSelection]);
 
   const handleCreateRuleFromSelection = useCallback(() => {
     if (selectedPhotos.length === 0) {
@@ -457,6 +486,9 @@ export const usePhotoManager = ({ userProfile, onProfileUpdate, filterLabel }: U
     handleFindDuplicates,
     isolateDuplicates,
     handleToggleIsolateDuplicates,
-    duplicateCount
+    duplicateCount,
+    isolateBlurry,
+    handleToggleIsolateBlurry,
+    blurryPhotoCount: blurryPhotos.length
   };
 };

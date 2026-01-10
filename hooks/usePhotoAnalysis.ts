@@ -24,6 +24,32 @@ export const usePhotoAnalysis = (
     return () => unsubscribe(); // Cleanup on unmount
   }, []);
 
+  // Effect to re-evaluate blur levels when user profile thresholds change
+  useEffect(() => {
+    const blurThreshold = userProfileRef.current?.blurThreshold ?? 100;
+    const sharpThreshold = userProfileRef.current?.sharpThreshold ?? 300;
+
+    setPhotos(prevPhotos => {
+      const newPhotos = new Map(prevPhotos);
+      let hasChanges = false;
+
+      for (const [id, photo] of newPhotos) {
+        if (photo.blurRaw !== undefined) {
+          let newLevel: 'sharp' | 'ok' | 'blurry';
+          if (photo.blurRaw < blurThreshold) newLevel = 'blurry';
+          else if (photo.blurRaw > sharpThreshold) newLevel = 'sharp';
+          else newLevel = 'ok';
+
+          if (newLevel !== photo.blurLevel) {
+            newPhotos.set(id, { ...photo, blurLevel: newLevel });
+            hasChanges = true;
+          }
+        }
+      }
+      return hasChanges ? newPhotos : prevPhotos;
+    });
+  }, [userProfileRef.current?.blurThreshold, userProfileRef.current?.sharpThreshold, setPhotos]);
+
   const analyzePhoto = useCallback(async (photoId: string) => {
     const photoToAnalyze = photos.get(photoId);
     if (!photoToAnalyze) return;
@@ -41,6 +67,7 @@ export const usePhotoAnalysis = (
       });
 
       // Extract metadata (Image object loading needed for dims)
+      // Creating the image element once here is efficient for reuse across 4 AI calls
       const img = new Image();
       img.src = dataUrl;
       await new Promise((resolve) => { img.onload = resolve; });
@@ -51,10 +78,19 @@ export const usePhotoAnalysis = (
         lastModified: 0 // File System Handle usually provides this, not the blob fetch directly here, but we can't easily access the handle here without passing it. Ignoring for now or defaulting.
       };
 
-      const [classifications, detections, embedding] = await Promise.all([
+      const blurThreshold = userProfileRef.current?.blurThreshold ?? 100;
+      const sharpThreshold = userProfileRef.current?.sharpThreshold ?? 300;
+
+      // Run all analysis in parallel
+      // 1. Classification (MobileNet)
+      // 2. Detection (COCO-SSD)
+      // 3. Embedding (MobileNet Feature Vector)
+      // 4. Blur Detection (Laplacian Variance)
+      const [classifications, detections, embedding, blurResult] = await Promise.all([
         api.classifyImage(dataUrl),
         api.detectObjects(dataUrl),
-        api.generateEmbedding(dataUrl)
+        api.generateEmbedding(dataUrl),
+        api.detectBlur(img, { blurry: blurThreshold, sharp: sharpThreshold })
       ]);
 
       if (!tfBackend) setTfBackend(api.getTfBackend());
@@ -89,6 +125,9 @@ export const usePhotoAnalysis = (
             classifications,
             detections,
             embedding,
+            blurScore: blurResult.score,
+            blurRaw: blurResult.raw,
+            blurLevel: blurResult.level,
             metadata: { ...metadata, lastModified: Date.now() }, // Fallback timestamp
             customLabel: matchedCustomLabel,
           };

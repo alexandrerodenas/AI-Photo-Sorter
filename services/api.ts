@@ -1,5 +1,8 @@
 
 import type { Prediction, ModelsLoadState, ModelLoadStatus } from './types.ts';
+import { detectBlur } from './blurDetection.ts'; // Import the new service
+
+export { detectBlur }; // Re-export for consumption
 
 // TensorFlow and its models will be loaded dynamically.
 let classificationModelPromise: Promise<any> | null = null;

@@ -20,6 +20,12 @@ This tool leverages the browser's File System Access API to read your photo dire
     - **Object Detection**: Employs a COCO-SSD model to identify and locate common objects within your photos (e.g., "person," "car," "dog").
 - **High-Performance Backend**: Automatically uses the best available AI backend for your browser, supporting **WebGPU**, **WASM**, and **WebGL** for maximum speed.
 
+### Blur Detection
+- **Smart Sharpness Analysis**: Pixo automatically scans every photo to calculate a sharpness score (0-100) using Laplacian Variance analysis directly on your GPU.
+- **Isolate Blurry Photos**: Quickly filter out low-quality, out-of-focus, or motion-blurred images with the **"Isolate Blurry"** feature. This makes it easy to delete bad shots and keep only the crispest memories.
+- **Visual Indicators**: Blurry photos are marked with a warning icon in the grid view.
+- **Detailed Scoring**: View the precise sharpness score and blur classification ("Sharp", "OK", "Blurry") in the photo details modal.
+
 ### Smart Duplicate Detection
 - **AI-Powered Matching**: Goes beyond filename matching. Pixo extracts semantic embeddings from images to detect **exact duplicates**, **near-duplicates** (resized, compressed), and **burst photos** (similar frames taken in sequence).
 - **GPU Accelerated**: Performs matrix calculations on your graphics card to compare thousands of photos in seconds.
@@ -94,6 +100,7 @@ You can easily run Pixo using Docker to serve the application locally.
 3.  **Let the AI Work**: The application will begin scanning and analyzing your photos using both AI models. You can watch the progress in real-time.
 4.  **Organize**:
     - **Find Duplicates**: Click **"Find Duplicates"** to scan your library. Pixo will group duplicates and auto-select the lower-quality versions. Review them in the "Isolate" view and delete them in one click.
+    - **Filter Blurry Photos**: Click **"Isolate Blurry"** to see only photos with low sharpness scores.
     - **Mark Favorites**: Click the heart icon on photos to mark them for saving.
     - **Browse & Filter**: Use the Grid/Folder views and the filter bar to find specific content.
     - **Apply Rules**: Use the "Apply Rules" button to auto-select photos based on your criteria.

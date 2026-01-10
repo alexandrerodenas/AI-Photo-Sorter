@@ -70,6 +70,9 @@ const PhotoSorter: React.FC<PhotoSorterProps> = ({ userProfile, onProfileUpdate 
     handleFindDuplicates,
     isolateDuplicates,
     handleToggleIsolateDuplicates,
+    isolateBlurry,
+    handleToggleIsolateBlurry,
+    blurryPhotoCount
   } = usePhotoManager({ userProfile, onProfileUpdate, filterLabel });
 
 
@@ -112,6 +115,9 @@ const PhotoSorter: React.FC<PhotoSorterProps> = ({ userProfile, onProfileUpdate 
             onFindDuplicates={handleFindDuplicates}
             isolateDuplicates={isolateDuplicates}
             onToggleIsolateDuplicates={handleToggleIsolateDuplicates}
+            isolateBlurry={isolateBlurry}
+            onToggleIsolateBlurry={handleToggleIsolateBlurry}
+            blurryPhotoCount={blurryPhotoCount}
         />
 
         {isSidebarOpen && (
@@ -147,6 +153,7 @@ const PhotoSorter: React.FC<PhotoSorterProps> = ({ userProfile, onProfileUpdate 
               isolateSelection={isolateSelection}
               isolateSaved={isolateSaved}
               isolateDuplicates={isolateDuplicates}
+              isolateBlurry={isolateBlurry}
               thumbnailSize={userProfile.thumbnailSize ?? 'M'}
               onToggleSavePhoto={handleToggleSavePhoto}
               onRequestDelete={handleRequestDelete}

@@ -18,6 +18,7 @@ import {
   Save,
   ChevronLeft,
   Copy,
+  AlertTriangle
 } from 'lucide-react';
 import { Spinner } from './ui.tsx';
 import AutocompleteInput from './AutocompleteInput.tsx';
@@ -56,6 +57,9 @@ interface PhotoSorterSidebarProps {
   onFindDuplicates: () => void;
   isolateDuplicates: boolean;
   onToggleIsolateDuplicates: () => void;
+  isolateBlurry: boolean;
+  onToggleIsolateBlurry: () => void;
+  blurryPhotoCount: number;
 }
 
 const PhotoSorterSidebar: React.FC<PhotoSorterSidebarProps> = ({
@@ -90,7 +94,10 @@ const PhotoSorterSidebar: React.FC<PhotoSorterSidebarProps> = ({
                                                                  processingQueueCount,
                                                                  onFindDuplicates,
                                                                  isolateDuplicates,
-                                                                 onToggleIsolateDuplicates
+                                                                 onToggleIsolateDuplicates,
+                                                                 isolateBlurry,
+                                                                 onToggleIsolateBlurry,
+                                                                 blurryPhotoCount
                                                                }) => {
 
   const existingRuleLabels = useMemo(() => new Set([
@@ -193,12 +200,14 @@ const PhotoSorterSidebar: React.FC<PhotoSorterSidebarProps> = ({
             <ActionButton onClick={onApplyRules} disabled={isLoading || noAnalyzedPhotos} title="Apply Manual Rules" openTitle={noAnalyzedPhotos && !isLoading ? "No analyzed photos to apply rules to" : "Apply custom rules to all analyzed photos"} className="bg-secondary text-white hover:bg-secondary-dark" icon={<Zap className="w-5 h-5"/>}>Apply Rules</ActionButton>
             <ActionButton onClick={onCreateRuleFromSelection} disabled={selectedPhotoCount === 0} title="Create Rule from Selection" openTitle={selectedPhotoCount > 0 ? "Create new rules from selected photos" : "Select photos to create rules from"} className="bg-accent text-white hover:bg-accent-dark" icon={<Wand2 className="w-5 h-5"/>}>Create Rule</ActionButton>
 
-            {/* Deduplication Actions */}
+            {/* Deduplication & Blur Actions */}
             <div className="border-t border-gray-200 dark:border-gray-700 pt-2 space-y-2">
               <ActionButton onClick={onFindDuplicates} disabled={isLoading || noAnalyzedPhotos} title="Find Duplicates" className="bg-purple-600 text-white hover:bg-purple-700" icon={<Copy className="w-5 h-5"/>}>Find Duplicates</ActionButton>
               {isolateDuplicates ? (
                   <ActionButton onClick={onToggleIsolateDuplicates} disabled={false} title="Show All Photos" className="bg-purple-100 text-purple-700 hover:bg-purple-200 dark:bg-purple-900/50 dark:text-purple-300" icon={<Eye className="w-5 h-5"/>}>Show All</ActionButton>
               ) : null}
+
+              <ActionButton onClick={onToggleIsolateBlurry} disabled={blurryPhotoCount === 0 && !isolateBlurry} title={isolateBlurry ? "Show all photos" : `Isolate Blurry (${blurryPhotoCount})`} className="bg-orange-500 text-white hover:bg-orange-600" icon={<AlertTriangle className="w-5 h-5"/>}>{isolateBlurry ? "Show All" : `Blurry (${blurryPhotoCount})`}</ActionButton>
             </div>
 
             <ActionButton onClick={onToggleIsolateSelection} disabled={selectedPhotoCount === 0 && !isolateSelection} title={isolateSelection ? "Show all photos" : "Isolate Selection"} className="bg-blue-500 text-white hover:bg-blue-600" icon={isolateSelection ? <Eye className="w-5 h-5"/> : <EyeOff className="w-5 h-5"/>}>{isolateSelection ? "Show All" : "Isolate"}</ActionButton>

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import type { UserProfile } from '../services/types.ts';
 import { Zap, Bot, ShieldCheck, SlidersHorizontal } from 'lucide-react';
@@ -39,6 +40,8 @@ const Onboarding: React.FC<OnboardingProps> = ({ onProfileSave }) => {
         unknownThreshold: 10,
         thumbnailSize: 'M',
         savedFolderName: 'Pixo Saved',
+        blurThreshold: 100,
+        sharpThreshold: 300,
       };
       onProfileSave(newProfile);
     }

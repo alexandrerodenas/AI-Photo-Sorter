@@ -12,6 +12,7 @@ import {
   Filter,
   Heart,
   Copy,
+  AlertTriangle,
 } from 'lucide-react';
 
 interface PhotoGridProps {
@@ -48,6 +49,7 @@ interface PhotoContentProps {
   isolateSelection: boolean;
   isolateSaved: boolean;
   isolateDuplicates: boolean;
+  isolateBlurry: boolean;
   onSelectPhoto: (id: string) => void;
   onViewPhoto: (photo: Photo) => void;
   thumbnailSize: ThumbnailSize;
@@ -64,6 +66,7 @@ const PhotoContent: React.FC<PhotoContentProps> = ({
                                                      isolateSelection,
                                                      isolateSaved,
                                                      isolateDuplicates,
+                                                     isolateBlurry,
                                                      onSelectPhoto,
                                                      onViewPhoto,
                                                      thumbnailSize,
@@ -97,6 +100,16 @@ const PhotoContent: React.FC<PhotoContentProps> = ({
       return isolatedMap;
     }
 
+    if (isolateBlurry) {
+      const isolatedMap = new Map<string, Photo>();
+      for (const [id, photo] of photosToReturn.entries()) {
+        if (photo.blurLevel === 'blurry') {
+          isolatedMap.set(id, photo);
+        }
+      }
+      return isolatedMap;
+    }
+
     if (isolateSelection) {
       const isolatedMap = new Map<string, Photo>();
       for (const [id, photo] of photosToReturn.entries()) {
@@ -108,7 +121,7 @@ const PhotoContent: React.FC<PhotoContentProps> = ({
     }
 
     return photosToReturn;
-  }, [photos, isolateSelection, isolateSaved, isolateDuplicates]);
+  }, [photos, isolateSelection, isolateSaved, isolateDuplicates, isolateBlurry]);
 
   const filteredPhotosForGrid = useMemo(() => {
     const photosArray = Array.from(photosToShow.values());
@@ -166,6 +179,10 @@ const PhotoContent: React.FC<PhotoContentProps> = ({
         title = "No Saved Photos";
         message = "You're in isolation mode, but no photos are saved. Click the heart on photos to save them.";
         Icon = Heart;
+      } else if (isolateBlurry) {
+        title = "No Blurry Photos";
+        message = "Excellent! All your photos appear to be sharp.";
+        Icon = AlertTriangle;
       }
 
 

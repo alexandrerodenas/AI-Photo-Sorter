@@ -22,10 +22,16 @@ export interface Photo {
   selected: boolean;
   isSaved?: boolean;
   customLabel?: string;
+
   // Duplicate Detection
   embedding?: number[]; // 1024-dim vector
   duplicateGroupId?: string;
   isDuplicate?: boolean; // If true, this is NOT the best photo in the group
+
+  // Blur Detection
+  blurScore?: number; // 0-100 normalized score
+  blurRaw?: number; // Raw variance value
+  blurLevel?: 'sharp' | 'ok' | 'blurry';
 
   matchedRules?: {
     classification?: string[]; // Names of matching classification rules
@@ -75,4 +81,8 @@ export interface UserProfile {
   thumbnailSize?: ThumbnailSize;
   savedFolderName?: string;
   customLabels?: CustomLabel[];
+
+  // Blur Settings
+  blurThreshold?: number; // Raw variance below this is 'blurry'
+  sharpThreshold?: number; // Raw variance above this is 'sharp'
 }

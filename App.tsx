@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import type { UserProfile } from './services/types.ts';
 import PhotoSorter from './components/PhotoSorter.tsx';
@@ -30,6 +31,13 @@ const App: React.FC = () => {
       }
       if (!loadedProfile.customLabels) {
         loadedProfile.customLabels = [];
+      }
+      // Initialize default blur thresholds if missing
+      if (loadedProfile.blurThreshold === undefined) {
+        loadedProfile.blurThreshold = 100;
+      }
+      if (loadedProfile.sharpThreshold === undefined) {
+        loadedProfile.sharpThreshold = 300;
       }
     }
 

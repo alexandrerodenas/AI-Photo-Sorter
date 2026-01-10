@@ -1,8 +1,9 @@
+
 import React, { useRef, useEffect, useState } from 'react';
 import type { Photo } from '../services/types.ts';
 import { PhotoStatus } from '../services/types.ts';
 import { StatusPill } from './ui.tsx';
-import { Check, Tag, Boxes, Heart, Bookmark } from 'lucide-react';
+import { Check, Tag, Boxes, Heart, Bookmark, AlertTriangle } from 'lucide-react';
 
 interface PhotoCardProps {
   photo: Photo;
@@ -114,6 +115,15 @@ function PhotoCard({ photo, onSelect, onView, onFilterChange, onToggleSave }: Ph
                     </div>
                 )}
               </div>
+
+              {/* Blur Indicator */}
+              {photo.blurLevel === 'blurry' && (
+                  <div className="absolute bottom-12 right-2 z-10">
+                    <div className="bg-orange-500/90 text-white p-1 rounded-full shadow-sm" title={`Blur Detected (Score: ${photo.blurScore})`}>
+                      <AlertTriangle className="w-3 h-3" />
+                    </div>
+                  </div>
+              )}
 
 
               <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/70 to-transparent">
