@@ -64,16 +64,28 @@ const ZenMode: React.FC<ZenModeProps> = ({
     onToggleSavePhoto(currentPhoto.id);
   }, [currentPhoto, onToggleSavePhoto]);
 
+  const [rotation, setRotation] = useState(0);
+
+  const handleRotate = useCallback((direction: 'left' | 'right') => {
+    setRotation(prev => (direction === 'left' ? prev - 90 : prev + 90));
+  }, []);
+
+  useEffect(() => {
+    setRotation(0);
+  }, [currentPhoto]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (isExporting) return;
 
       switch (e.key) {
         case 'ArrowLeft':
-          handlePrev();
+          if (e.shiftKey) handleRotate('left');
+          else handlePrev();
           break;
         case 'ArrowRight':
-          handleNext();
+          if (e.shiftKey) handleRotate('right');
+          else handleNext();
           break;
         case 'Delete':
         case 'Backspace':
@@ -183,6 +195,7 @@ const ZenMode: React.FC<ZenModeProps> = ({
                   <img
                       src={currentPhoto.objectURL}
                       alt="Zen review"
+                      style={{ transform: `rotate(${rotation}deg)`, transition: 'transform 0.2s' }}
                       className="max-w-full max-h-[75vh] object-contain select-none rounded-lg shadow-[0_0_50px_rgba(0,0,0,0.5)] border border-white/5"
                   />
 
@@ -250,6 +263,14 @@ const ZenMode: React.FC<ZenModeProps> = ({
                     <kbd className="bg-white/20 px-2 py-1 rounded font-mono shadow-inner">→</kbd>
                   </div>
                   <span className="text-gray-400 font-medium uppercase tracking-wider">Navigate</span>
+                </div>
+                <div className="flex items-center gap-4 text-xs bg-white/5 backdrop-blur-md px-4 py-2 rounded-xl border border-white/10">
+                  <div className="flex gap-1">
+                    <kbd className="bg-white/20 px-2 py-1 rounded font-mono shadow-inner text-[9px]">SHIFT</kbd>
+                    <kbd className="bg-white/20 px-2 py-1 rounded font-mono shadow-inner">←</kbd>
+                    <kbd className="bg-white/20 px-2 py-1 rounded font-mono shadow-inner">→</kbd>
+                  </div>
+                  <span className="text-gray-400 font-medium uppercase tracking-wider">Rotate</span>
                 </div>
                 <div className="flex items-center gap-4 text-xs bg-white/5 backdrop-blur-md px-4 py-2 rounded-xl border border-white/10">
                   <kbd className="bg-white/20 px-2 py-1 rounded font-mono shadow-inner w-8 text-center">P</kbd>
