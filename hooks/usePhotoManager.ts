@@ -171,8 +171,8 @@ export const usePhotoManager = ({ userProfile, onProfileUpdate, filterLabel }: U
     }
   }, [blurryPhotos.length, isolateBlurry, isolateSelection, handleToggleIsolateSelection]);
 
-  const handleMoveSavedPhotos = useCallback((photosToMove: Photo[] = savedPhotos, folderName: string = userProfileRef.current.savedFolderName || 'Pixo Saved') => {
-    handleMoveSaved(photosToMove, folderName);
+  const handleMoveSavedPhotos = useCallback((photosToMove: Photo[] = savedPhotos, folderName: string = userProfileRef.current.savedFolderName || 'saves', operation: 'copy' | 'move' = userProfileRef.current.savedOperation || 'move') => {
+    handleMoveSaved(photosToMove, folderName, operation);
   }, [savedPhotos, userProfileRef, handleMoveSaved]);
 
   const handleRequestDelete = useCallback((photos: Photo[] = selectedPhotos, skipConfirm: boolean = false) => {

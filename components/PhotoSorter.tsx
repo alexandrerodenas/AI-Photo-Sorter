@@ -71,6 +71,11 @@ const PhotoSorter: React.FC<PhotoSorterProps> = ({ userProfile, onProfileUpdate 
 
   return (
       <div className="relative h-screen flex flex-col overflow-hidden bg-gray-100 dark:bg-gray-900">
+        {!isApiSupported && (
+            <div className="bg-red-500 text-white text-sm font-medium px-4 py-2 text-center w-full shadow-md z-50">
+              ⚠️ Your browser does not support the File System Access API. Pixo cannot access local folders directly. Please use a Chromium-based browser (Chrome, Edge, Brave).
+            </div>
+        )}
 
         {/* Top Control Bar */}
         <ControlBar
@@ -125,7 +130,7 @@ const PhotoSorter: React.FC<PhotoSorterProps> = ({ userProfile, onProfileUpdate 
             onMoveSavedPhotos={handleMoveSavedPhotos}
             viewMode={viewMode}
             setViewMode={setViewMode}
-            savedFolderName={userProfile.savedFolderName || 'Pixo Saved'}
+            savedFolderName={userProfile.savedFolderName || 'saves'}
         />
 
         {/* Floating HUD (Stats & Status) */}

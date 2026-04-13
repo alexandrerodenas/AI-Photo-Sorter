@@ -27,7 +27,10 @@ const App: React.FC = () => {
         loadedProfile.thumbnailSize = 'M';
       }
       if (!loadedProfile.savedFolderName) {
-        loadedProfile.savedFolderName = 'Pixo Saved';
+        loadedProfile.savedFolderName = 'saves';
+      }
+      if (!loadedProfile.savedOperation) {
+        loadedProfile.savedOperation = 'move';
       }
       if (!loadedProfile.customLabels) {
         loadedProfile.customLabels = [];

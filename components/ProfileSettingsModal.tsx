@@ -27,7 +27,8 @@ const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({ isOpen, onC
     customLabels: userProfile.customLabels || [],
     unknownThreshold: userProfile.unknownThreshold ?? 10,
     thumbnailSize: userProfile.thumbnailSize ?? 'M',
-    savedFolderName: userProfile.savedFolderName || 'Pixo Saved',
+    savedFolderName: userProfile.savedFolderName || 'saves',
+    savedOperation: userProfile.savedOperation || 'move',
   }));
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -91,7 +92,8 @@ const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({ isOpen, onC
             ...importedProfile,
             unknownThreshold: importedProfile.unknownThreshold ?? 10,
             thumbnailSize: importedProfile.thumbnailSize ?? 'M',
-            savedFolderName: importedProfile.savedFolderName || 'Pixo Saved',
+            savedFolderName: importedProfile.savedFolderName || 'saves',
+            savedOperation: importedProfile.savedOperation || 'move',
           };
           setEditedProfile(newProfileState);
           alert("Profile imported successfully! Review the changes and click 'Save Changes' to apply them.");

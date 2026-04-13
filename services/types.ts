@@ -80,6 +80,7 @@ export interface UserProfile {
   unknownThreshold?: number; // 0-50, percentage for classifying photos as 'Uncategorized'
   thumbnailSize?: ThumbnailSize;
   savedFolderName?: string;
+  savedOperation?: 'copy' | 'move';
   customLabels?: CustomLabel[];
 
   // Blur Settings

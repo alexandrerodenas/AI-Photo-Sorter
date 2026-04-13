@@ -33,7 +33,7 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ profile, setProfil
   return (
       <div className="space-y-6">
         {/* General Settings */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block font-semibold mb-1">First Name</label>
             <input type="text" value={profile.firstName} onChange={e => handleInputChange('firstName', e.target.value)} className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-primary"/>
@@ -41,6 +41,13 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ profile, setProfil
           <div>
             <label className="block font-semibold mb-1">"Saved" Folder Name</label>
             <input type="text" value={profile.savedFolderName} onChange={e => handleInputChange('savedFolderName', e.target.value)} className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-primary"/>
+          </div>
+          <div>
+            <label className="block font-semibold mb-1">Saved Operation</label>
+            <select value={profile.savedOperation || 'move'} onChange={e => handleInputChange('savedOperation', e.target.value)} className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-primary">
+              <option value="move">Move (Delete original)</option>
+              <option value="copy">Copy (Keep original)</option>
+            </select>
           </div>
         </div>
 

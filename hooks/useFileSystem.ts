@@ -150,17 +150,17 @@ export const useFileSystem = (
     }
   }, [directoryHandleRef, setPhotos, setStatusMessage]);
 
-  const handleMoveSaved = useCallback(async (savedPhotos: Photo[], savedFolderName: string) => {
+  const handleMoveSaved = useCallback(async (savedPhotos: Photo[], savedFolderName: string, operation: 'copy' | 'move' = 'move') => {
     if (savedPhotos.length === 0 || !directoryHandleRef.current) return;
 
-    if (!window.confirm(`This will move ${savedPhotos.length} photo(s) to a new directory and remove them from here. This action is permanent. Continue?`)) {
+    if (!window.confirm(`This will ${operation} ${savedPhotos.length} photo(s) to a new directory. This action is permanent. Continue?`)) {
       return;
     }
 
     let destDirHandle: FileSystemDirectoryHandle;
     try {
       destDirHandle = await (window as any).showDirectoryPicker({
-        title: 'Select Destination Directory for Saved Photos'
+        title: `Select Destination Directory for Saved Photos (${operation})`
       });
     } catch (error) {
       if ((error as DOMException).name === 'AbortError') {
@@ -173,20 +173,20 @@ export const useFileSystem = (
     }
 
     try {
-      setStatusMessage('Preparing to move files...');
+      setStatusMessage(`Preparing to ${operation} files...`);
       const targetSubDir = await destDirHandle.getDirectoryHandle(savedFolderName, { create: true });
 
-      const movedPhotoIds: string[] = [];
-      const failedMoves: string[] = [];
+      const processedPhotoIds: string[] = [];
+      const failedOperations: string[] = [];
 
       for (const photo of savedPhotos) {
-        setStatusMessage(`Moving ${photo.id}...`);
+        setStatusMessage(`${operation === 'move' ? 'Moving' : 'Copying'} ${photo.id}...`);
         const sourceHandle = directoryHandleRef.current;
         const sourceFileHandle = await getFileHandleByPath(sourceHandle, photo.id);
 
         if (!sourceFileHandle) {
           console.error(`Could not find source file for ${photo.id}`);
-          failedMoves.push(photo.id);
+          failedOperations.push(photo.id);
           continue;
         }
 
@@ -197,39 +197,45 @@ export const useFileSystem = (
           await writable.write(fileData);
           await writable.close();
 
-          const deleted = await deleteFileByPath(sourceHandle, photo.id);
-          if (deleted) {
-            movedPhotoIds.push(photo.id);
-          } else {
-            console.error(`Copied but failed to delete original for ${photo.id}`);
-            failedMoves.push(photo.id);
+          let processed = true;
+          if (operation === 'move') {
+            processed = await deleteFileByPath(sourceHandle, photo.id);
           }
-        } catch (moveError) {
-          console.error(`Error moving file ${photo.id}:`, moveError);
-          failedMoves.push(photo.id);
+          
+          if (processed) {
+            processedPhotoIds.push(photo.id);
+          } else {
+            console.error(`Error deleting original for ${photo.id}`);
+            failedOperations.push(photo.id);
+          }
+        } catch (opError) {
+          console.error(`Error ${operation}ing file ${photo.id}:`, opError);
+          failedOperations.push(photo.id);
         }
       }
 
       setPhotos(prev => {
         const newPhotos = new Map(prev);
-        movedPhotoIds.forEach(id => {
-          const photo = newPhotos.get(id);
-          if (photo) {
-            URL.revokeObjectURL(photo.objectURL);
-            newPhotos.delete(id);
-          }
-        });
+        if (operation === 'move') {
+          processedPhotoIds.forEach(id => {
+            const photo = newPhotos.get(id);
+            if (photo) {
+              URL.revokeObjectURL(photo.objectURL);
+              newPhotos.delete(id);
+            }
+          });
+        }
         return newPhotos;
       });
 
-      if (failedMoves.length > 0) {
-        setStatusMessage(`Moved ${movedPhotoIds.length} photos. ${failedMoves.length} failed.`);
+      if (failedOperations.length > 0) {
+        setStatusMessage(`${operation === 'move' ? 'Moved' : 'Copied'} ${processedPhotoIds.length} photos. ${failedOperations.length} failed.`);
       } else {
-        setStatusMessage(`Successfully moved ${movedPhotoIds.length} photos to "${savedFolderName}". ✅`);
+        setStatusMessage(`Successfully ${operation === 'move' ? 'moved' : 'copied'} ${processedPhotoIds.length} photos to "${savedFolderName}". ✅`);
       }
 
     } catch(err) {
-      setStatusMessage('An error occurred during the move operation.');
+      setStatusMessage(`An error occurred during the ${operation} operation.`);
       console.error(err);
     }
   }, [directoryHandleRef, setPhotos, setStatusMessage]);
