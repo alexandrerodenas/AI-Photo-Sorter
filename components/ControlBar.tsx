@@ -4,7 +4,6 @@ import type { UserProfile } from '../services/types.ts';
 import {
   FolderOpen,
   Trash2,
-  Filter,
   Search,
   Zap,
   CheckSquare,
@@ -19,6 +18,7 @@ import {
   AlertTriangle,
   LayoutGrid,
   FolderTree,
+  Sparkles,
 } from 'lucide-react';
 import { Spinner } from './ui.tsx';
 import AutocompleteInput from './AutocompleteInput.tsx';
@@ -52,8 +52,8 @@ interface ControlBarProps {
   isolateBlurry: boolean;
   onToggleIsolateBlurry: () => void;
   blurryPhotoCount: number;
-  viewMode: 'grid' | 'folder';
-  setViewMode: (mode: 'grid' | 'folder') => void;
+  viewMode: 'grid' | 'folder' | 'zen';
+  setViewMode: (mode: 'grid' | 'folder' | 'zen') => void;
 }
 
 const ControlBar: React.FC<ControlBarProps> = ({
@@ -172,6 +172,15 @@ const ControlBar: React.FC<ControlBarProps> = ({
                 onClick={() => setViewMode('folder')}
                 icon={<FolderTree className="w-4 h-4" />}
                 title="Folder View"
+                activeClass="bg-white dark:bg-gray-600 shadow-sm text-primary"
+                inactiveClass="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                className="!p-1.5"
+            />
+            <IconButton
+                active={viewMode === 'zen'}
+                onClick={() => setViewMode('zen')}
+                icon={<Sparkles className="w-4 h-4" />}
+                title="Zen Mode"
                 activeClass="bg-white dark:bg-gray-600 shadow-sm text-primary"
                 inactiveClass="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
                 className="!p-1.5"

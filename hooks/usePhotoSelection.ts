@@ -1,6 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import type { Photo } from '../services/types.ts';
-import { PhotoStatus } from '../services/types.ts';
 
 
 export const usePhotoSelection = (

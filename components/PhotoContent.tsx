@@ -4,6 +4,7 @@ import type { Photo, ThumbnailSize } from '../services/types.ts';
 import { PhotoStatus } from '../services/types.ts';
 import PhotoCard from './PhotoCard.tsx';
 import FolderView from './FolderView.tsx';
+import ZenMode from './ZenMode.tsx';
 import {
   FolderOpen,
   EyeOff,
@@ -53,9 +54,12 @@ interface PhotoContentProps {
   thumbnailSize: ThumbnailSize;
   onFilterChange: (label: string) => void;
   onToggleSavePhoto: (id: string) => void;
-  onRequestDelete: (photos: Photo[]) => void;
+  onRequestDelete: (photos: Photo[], skipConfirm?: boolean) => void;
   onBulkSave: (photos: Photo[]) => void;
-  viewMode: 'grid' | 'folder';
+  onMoveSavedPhotos: (photos: Photo[], folderName: string) => void;
+  viewMode: 'grid' | 'folder' | 'zen';
+  setViewMode: (mode: 'grid' | 'folder' | 'zen') => void;
+  savedFolderName: string;
 }
 
 const PhotoContent: React.FC<PhotoContentProps> = ({
@@ -73,7 +77,10 @@ const PhotoContent: React.FC<PhotoContentProps> = ({
                                                      onToggleSavePhoto,
                                                      onRequestDelete,
                                                      onBulkSave,
-                                                     viewMode
+                                                     onMoveSavedPhotos,
+                                                     viewMode,
+                                                     setViewMode,
+                                                     savedFolderName
                                                    }) => {
 
   const photosToShow = useMemo(() => {
@@ -205,6 +212,19 @@ const PhotoContent: React.FC<PhotoContentProps> = ({
         );
       }
       return <PhotoGrid photos={filteredPhotosForGrid} onSelectPhoto={onSelectPhoto} onViewPhoto={onViewPhoto} thumbnailSize={thumbnailSize} onFilterChange={onFilterChange} onToggleSavePhoto={onToggleSavePhoto} />;
+    }
+
+    if (viewMode === 'zen') {
+      return (
+          <ZenMode
+              photos={filteredPhotosForGrid}
+              onClose={() => setViewMode('grid')}
+              onToggleSavePhoto={onToggleSavePhoto}
+              onRequestDelete={onRequestDelete}
+              onMoveSavedPhotos={onMoveSavedPhotos}
+              savedFolderName={savedFolderName}
+          />
+      );
     }
 
     return <FolderView photos={photosToShow} onSelectPhoto={onSelectPhoto} onViewPhoto={onViewPhoto} thumbnailSize={thumbnailSize} onFilterChange={onFilterChange} onToggleSave={onToggleSavePhoto} onRequestDelete={onRequestDelete} onBulkSave={onBulkSave} />;

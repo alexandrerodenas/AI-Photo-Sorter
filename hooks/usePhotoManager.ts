@@ -82,7 +82,7 @@ export const usePhotoManager = ({ userProfile, onProfileUpdate, filterLabel }: U
   const {
     tfBackend,
     modelsLoadState,
-  } = usePhotoAnalysis(photos, setPhotos, userProfileRef, applyRules, setStatusMessage);
+  } = usePhotoAnalysis(photos, setPhotos, userProfileRef, applyRules);
 
   // --- Derived State ---
   const { allAvailableClassificationLabels, allAvailableDetectionLabels, allAvailableLabels } = useMemo(() => {
@@ -171,20 +171,20 @@ export const usePhotoManager = ({ userProfile, onProfileUpdate, filterLabel }: U
     }
   }, [blurryPhotos.length, isolateBlurry, isolateSelection, handleToggleIsolateSelection]);
 
-  const handleMoveSavedPhotos = useCallback(() => {
-    handleMoveSaved(savedPhotos, userProfileRef.current.savedFolderName || 'Pixo Saved');
+  const handleMoveSavedPhotos = useCallback((photosToMove: Photo[] = savedPhotos, folderName: string = userProfileRef.current.savedFolderName || 'Pixo Saved') => {
+    handleMoveSaved(photosToMove, folderName);
   }, [savedPhotos, userProfileRef, handleMoveSaved]);
 
-  const handleRequestDelete = useCallback((photos: Photo[] = selectedPhotos) => {
+  const handleRequestDelete = useCallback((photos: Photo[] = selectedPhotos, skipConfirm: boolean = false) => {
     if (photos.length === 0) return;
 
     const savedInSelection = photos.filter(p => p.isSaved);
 
-    if (savedInSelection.length > 0) {
+    if (!skipConfirm && savedInSelection.length > 0) {
       setConfirmDeleteState({ isOpen: true, photosToDelete: photos });
     } else {
       // No saved photos in selection, ask for simple confirmation
-      if (window.confirm(`Are you sure you want to permanently delete ${photos.length} photo(s)? This action cannot be undone.`)) {
+      if (skipConfirm || window.confirm(`Are you sure you want to permanently delete ${photos.length} photo(s)? This action cannot be undone.`)) {
         handleDeletePhotos(photos);
       }
     }

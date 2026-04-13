@@ -22,7 +22,7 @@ const PhotoSorter: React.FC<PhotoSorterProps> = ({ userProfile, onProfileUpdate 
   const [viewingPhoto, setViewingPhoto] = React.useState<Photo | null>(null);
 
   // Lifted ViewMode state so ControlBar can manage it
-  const [viewMode, setViewMode] = React.useState<'grid' | 'folder'>('grid');
+  const [viewMode, setViewMode] = React.useState<'grid' | 'folder' | 'zen'>('grid');
 
   const {
     photos,
@@ -122,7 +122,10 @@ const PhotoSorter: React.FC<PhotoSorterProps> = ({ userProfile, onProfileUpdate 
             onToggleSavePhoto={handleToggleSavePhoto}
             onRequestDelete={handleRequestDelete}
             onBulkSave={handleBulkSave}
+            onMoveSavedPhotos={handleMoveSavedPhotos}
             viewMode={viewMode}
+            setViewMode={setViewMode}
+            savedFolderName={userProfile.savedFolderName || 'Pixo Saved'}
         />
 
         {/* Floating HUD (Stats & Status) */}
