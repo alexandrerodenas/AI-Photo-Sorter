@@ -1,5 +1,5 @@
 
-import { Photo, DuplicateGroup } from './types.ts';
+import { Photo, DuplicateGroup, PhotoStatus } from './types.js';
 import { getTF } from './api.ts';
 
 // Similarity threshold for considering two photos as duplicates
@@ -7,7 +7,7 @@ import { getTF } from './api.ts';
 const DUPLICATE_THRESHOLD = 0.94;
 
 export const findDuplicateGroups = async (photos: Photo[]): Promise<DuplicateGroup[]> => {
-  const analyzedPhotos = photos.filter(p => p.status === 'ANALYZED' && p.embedding && p.embedding.length > 0);
+  const analyzedPhotos = photos.filter(p => p.status === PhotoStatus.ANALYZED && p.embedding && p.embedding.length > 0);
 
   if (analyzedPhotos.length < 2) return [];
 
@@ -109,7 +109,7 @@ function createDuplicateGroup(photoIds: string[], allPhotos: Photo[]): Duplicate
   });
 
   return {
-    id: `dup-group-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    id: crypto.randomUUID(),
     photos: photoIds,
     bestPhotoId: groupPhotos[0].id
   };

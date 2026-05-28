@@ -343,7 +343,7 @@ export const usePhotoManager = ({ userProfile, onProfileUpdate, filterLabel }: U
         const topClassification = photo.classifications.reduce((max, p) => p.score > max.score ? p : max);
         if (!existingClassificationLabels.has(topClassification.label.toLowerCase())) {
           newClassificationRules.push({
-            id: `${Date.now()}-c-${topClassification.label}`,
+            id: crypto.randomUUID(),
             label: topClassification.label,
             confidence: Math.max(1, Math.floor(topClassification.score * 100)),
           });
@@ -353,7 +353,7 @@ export const usePhotoManager = ({ userProfile, onProfileUpdate, filterLabel }: U
         const topDetection = photo.detections.reduce((max, p) => p.score > max.score ? p : max);
         if (!existingDetectionLabels.has(topDetection.label.toLowerCase())) {
           newDetectionRules.push({
-            id: `${Date.now()}-d-${topDetection.label}`,
+            id: crypto.randomUUID(),
             label: topDetection.label,
             confidence: Math.max(1, Math.floor(topDetection.score * 100)),
           });
@@ -390,7 +390,7 @@ export const usePhotoManager = ({ userProfile, onProfileUpdate, filterLabel }: U
       for (const [labelKey, data] of commonClassifications.entries()) {
         if (!existingClassificationLabels.has(labelKey)) {
           newClassificationRules.push({
-            id: `${Date.now()}-c-${labelKey}`,
+            id: crypto.randomUUID(),
             label: data.originalLabel,
             confidence: Math.max(1, Math.floor(data.score * 100)),
           });
@@ -399,7 +399,7 @@ export const usePhotoManager = ({ userProfile, onProfileUpdate, filterLabel }: U
       for (const [labelKey, data] of commonDetections.entries()) {
         if (!existingDetectionLabels.has(labelKey)) {
           newDetectionRules.push({
-            id: `${Date.now()}-d-${labelKey}`,
+            id: crypto.randomUUID(),
             label: data.originalLabel,
             confidence: Math.max(1, Math.floor(data.score * 100)),
           });
@@ -433,13 +433,13 @@ export const usePhotoManager = ({ userProfile, onProfileUpdate, filterLabel }: U
 
     const hasClassificationRule = currentProfile.classificationRules.some(r => r.label.toLowerCase() === lowercasedLabel);
     if (!hasClassificationRule) {
-      newProfile.classificationRules.push({ id: `${Date.now()}-c-${trimmedLabel}`, label: trimmedLabel });
+      newProfile.classificationRules.push({ id: crypto.randomUUID(), label: trimmedLabel });
       ruleAdded = true;
     }
 
     const hasDetectionRule = currentProfile.detectionRules.some(r => r.label.toLowerCase() === lowercasedLabel);
     if (!hasDetectionRule) {
-      newProfile.detectionRules.push({ id: `${Date.now()}-d-${trimmedLabel}`, label: trimmedLabel });
+      newProfile.detectionRules.push({ id: crypto.randomUUID(), label: trimmedLabel });
       ruleAdded = true;
     }
 

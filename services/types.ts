@@ -14,7 +14,6 @@ export interface Prediction {
 
 export interface Photo {
   id: string; // The full path of the photo, used as a unique ID
-  binary: string; // base64 encoded string
   objectURL: string; // blob url for efficient rendering
   status: PhotoStatus;
   classifications: Prediction[];
