@@ -63,7 +63,7 @@ export const detectBlur = async (imageElement: HTMLImageElement, thresholds: Blu
     // 5. Center Cropping (Subject Isolation)
     // To handle bokeh/portrait mode, we only analyze the center 60% of the image.
     // If the subject is sharp but background is blurry, the whole-image variance drops.
-    const [batch, eHeight, eWidth, depth] = edges.shape;
+    const [, eHeight, eWidth] = edges.shape;
     const cropH = Math.floor(eHeight * 0.6);
     const cropW = Math.floor(eWidth * 0.6);
     const startH = Math.floor((eHeight - cropH) / 2);

@@ -43,7 +43,6 @@ async function getFileHandleByPath(dirHandle: FileSystemDirectoryHandle, path: s
 export const useFileSystem = (
     directoryHandleRef: React.MutableRefObject<FileSystemDirectoryHandle | null>,
     photos: Map<string, Photo>,
-    selectedPhotos: Photo[],
     setPhotos: React.Dispatch<React.SetStateAction<Map<string, Photo>>>,
     setStatusMessage: (message: string) => void
 ) => {
@@ -72,7 +71,7 @@ export const useFileSystem = (
 
       const filesToProcess: { path: string, handle: FileSystemFileHandle }[] = [];
       async function getFilesRecursively(dirHandle: FileSystemDirectoryHandle, path: string) {
-        for await (const entry of dirHandle.values()) {
+        for await (const entry of (dirHandle as any).values()) {
           const newPath = path ? `${path}/${entry.name}` : entry.name;
           if (entry.kind === 'file' && entry.name.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
             filesToProcess.push({ path: newPath, handle: entry as FileSystemFileHandle });

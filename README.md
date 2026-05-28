@@ -5,6 +5,17 @@
 
 # Pixo
 
+<p align="center">
+  <a href="https://github.com/alexandrerodenas/Pixo/blob/main/LICENSE"><img src="https://img.shields.io/github/license/alexandrerodenas/Pixo?color=blue" alt="License"></a>
+  <a href="https://github.com/alexandrerodenas/Pixo/releases"><img src="https://img.shields.io/github/package-json/v/alexandrerodenas/Pixo?color=green" alt="Version"></a>
+  <img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white" alt="React">
+  <img src="https://img.shields.io/badge/TypeScript-5.7-3178C6?logo=typescript&logoColor=white" alt="TypeScript">
+  <img src="https://img.shields.io/badge/TensorFlow.js-4.20-FF6F00?logo=tensorflow&logoColor=white" alt="TensorFlow.js">
+  <img src="https://img.shields.io/badge/Vite-6-646CFF?logo=vite&logoColor=white" alt="Vite">
+  <img src="https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white" alt="Docker">
+  <a href="https://github.com/alexandrerodenas/Pixo"><img src="https://img.shields.io/github/last-commit/alexandrerodenas/Pixo?color=blue" alt="Last commit"></a>
+</p>
+
 Organize your photos effortlessly.
 
 Pixo is a powerful, privacy-focused web application that helps you automatically organize your local photos using artificial intelligence, right in your browser. No uploads, no servers, no data collection—your photos and your data stay on your machine.
@@ -110,6 +121,3 @@ You can easily run Pixo using Docker to serve the application locally.
     - Add custom **classification** and **detection** rules, adjust the **uncertainty threshold**, change your **"Saved" folder name**, and manage your preferences.
     - Don't forget to **export your profile** to save your settings!
 
----
-
-Built with ❤️ using React, TypeScript, Tailwind CSS, and TensorFlow.js.
