@@ -61,7 +61,7 @@ export const usePhotoManager = ({ userProfile, onProfileUpdate, filterLabel }: U
     handleLoadPhotos,
     handleDeletePhotos,
     handleMoveSaved
-  } = useFileSystem(directoryHandleRef, photos, selectedPhotos, setPhotos, setStatusMessage);
+  } = useFileSystem(directoryHandleRef, photos, setPhotos, setStatusMessage);
 
   // --- Rule Application Logic ---
   const applyRules = useCallback((predictions: Prediction[], rules: FilterRule[]): string[] => {
