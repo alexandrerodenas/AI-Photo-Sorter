@@ -59,7 +59,7 @@ export const CustomLabelsManager: React.FC<CustomLabelsManagerProps> = ({ profil
       } else {
         // Add new
         const newLabel: CustomLabel = {
-          id: `cl-${Date.now()}`,
+          id: crypto.randomUUID(),
           name: name.trim(),
           labels: associatedLabels
         };

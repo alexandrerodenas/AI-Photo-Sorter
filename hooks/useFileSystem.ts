@@ -90,6 +90,11 @@ export const useFileSystem = (
 
       setStatusMessage(`Found ${filesToProcess.length} photos. Queuing for analysis...`);
 
+      // Revoke old blob URLs to prevent memory leak
+      for (const photo of photos.values()) {
+        URL.revokeObjectURL(photo.objectURL);
+      }
+
       const tempPhotosMap = new Map<string, Photo>();
       // Use Promise.all to speed up file reading for previews
       await Promise.all(filesToProcess.map(async ({ path, handle }) => {
@@ -97,7 +102,6 @@ export const useFileSystem = (
         const objectURL = URL.createObjectURL(file);
         tempPhotosMap.set(path, {
           id: path,
-          binary: '', // Will be loaded on demand for analysis
           objectURL,
           status: PhotoStatus.QUEUED,
           classifications: [],

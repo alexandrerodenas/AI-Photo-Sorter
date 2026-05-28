@@ -27,7 +27,7 @@ export const RulesManager: React.FC<RulesManagerProps> = ({ profile, setProfile,
     if (type === 'classification') {
       if (!newClassificationRule.label.trim()) return;
       const ruleToAdd: FilterRule = {
-        id: Date.now().toString(),
+        id: crypto.randomUUID(),
         label: newClassificationRule.label.trim(),
       };
       if (!isClassificationAnyConfidence) {
@@ -42,7 +42,7 @@ export const RulesManager: React.FC<RulesManagerProps> = ({ profile, setProfile,
     } else {
       if (!newDetectionRule.label.trim()) return;
       const ruleToAdd: FilterRule = {
-        id: Date.now().toString(),
+        id: crypto.randomUUID(),
         label: newDetectionRule.label.trim(),
       };
       if (!isDetectionAnyConfidence) {
