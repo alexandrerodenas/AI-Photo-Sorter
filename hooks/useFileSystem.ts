@@ -51,7 +51,7 @@ export const useFileSystem = (
 
   // Check for API support on mount
   useEffect(() => {
-    if (!(window as any).showDirectoryPicker) {
+    if (!window.showDirectoryPicker) {
       setIsApiSupported(false);
       setStatusMessage('Browser not supported. Use Chrome or Edge for directory access.');
       console.warn("File System Access API (`showDirectoryPicker`) is not supported in this browser.");
@@ -62,7 +62,7 @@ export const useFileSystem = (
     if (!isApiSupported) return;
 
     try {
-      const handle = await (window as any).showDirectoryPicker();
+      const handle = await window.showDirectoryPicker();
       directoryHandleRef.current = handle;
 
       setIsLoading(true);
@@ -162,7 +162,7 @@ export const useFileSystem = (
 
     let destDirHandle: FileSystemDirectoryHandle;
     try {
-      destDirHandle = await (window as any).showDirectoryPicker({
+      destDirHandle = await window.showDirectoryPicker({
         title: `Select Destination Directory for Saved Photos (${operation})`
       });
     } catch (error) {

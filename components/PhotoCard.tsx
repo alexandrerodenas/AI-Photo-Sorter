@@ -27,7 +27,7 @@ function PhotoCard({ photo, onSelect, onView, onFilterChange, onToggleSave }: Ph
           }
         },
         {
-          rootMargin: '200px 0px', // Load images a bit before they enter the viewport
+          rootMargin: '200px 0px',
         }
     );
 
@@ -40,12 +40,6 @@ function PhotoCard({ photo, onSelect, onView, onFilterChange, onToggleSave }: Ph
       if (currentRef) {
         observer.unobserve(currentRef);
       }
-    };
-  }, []);
-
-  // Cleanup timer on unmount
-  useEffect(() => {
-    return () => {
       if (clickTimeoutRef.current) {
         clearTimeout(clickTimeoutRef.current);
       }

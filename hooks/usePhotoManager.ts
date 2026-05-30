@@ -1,5 +1,5 @@
 
-import { useState, useCallback, useMemo, useRef } from 'react';
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import type { UserProfile, Photo, FilterRule, Prediction } from '../services/types.ts';
 import { PhotoStatus } from '../services/types.ts';
 import { useFileSystem } from './useFileSystem.ts';
@@ -18,6 +18,17 @@ export const usePhotoManager = ({ userProfile, onProfileUpdate, filterLabel }: U
   const [photos, setPhotos] = useState<Map<string, Photo>>(new Map());
   const [statusMessage, setStatusMessage] = useState<string>('Ready to organize some photos! 🥳');
   const [confirmDeleteState, setConfirmDeleteState] = useState<{isOpen: boolean, photosToDelete: Photo[]}>({ isOpen: false, photosToDelete: [] });
+
+  // Revoke blob URLs on unmount to prevent memory leaks
+  const photosRef = useRef(photos);
+  photosRef.current = photos;
+  useEffect(() => {
+    return () => {
+      for (const photo of photosRef.current.values()) {
+        URL.revokeObjectURL(photo.objectURL);
+      }
+    };
+  }, []);
 
   const directoryHandleRef = useRef<FileSystemDirectoryHandle | null>(null);
   const userProfileRef = useRef(userProfile);
