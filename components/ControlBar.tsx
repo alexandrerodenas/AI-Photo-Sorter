@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import type { UserProfile } from '../services/types.ts';
 import {
   FolderOpen,
@@ -19,6 +19,7 @@ import {
   LayoutGrid,
   FolderTree,
   Sparkles,
+  MoreHorizontal,
 } from 'lucide-react';
 import { Spinner } from './ui.tsx';
 import AutocompleteInput from './AutocompleteInput.tsx';
@@ -96,6 +97,20 @@ const ControlBar: React.FC<ControlBarProps> = ({
   const trimmedFilterLabel = filterLabel.trim();
   const showCreateRuleButton = trimmedFilterLabel && !existingRuleLabels.has(trimmedFilterLabel.toLowerCase());
 
+  // Mobile actions dropdown state
+  const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target as Node)) {
+        setMobileMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   // Helper for Icon Buttons
   const IconButton = ({ onClick, disabled, active, icon, title, className = '', activeClass = 'bg-primary text-white', inactiveClass = 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700' }: any) => (
       <button
@@ -151,8 +166,8 @@ const ControlBar: React.FC<ControlBarProps> = ({
           )}
         </div>
 
-        {/* Center: Actions Toolbar */}
-        <div className="flex-1 flex items-center justify-start gap-2 overflow-x-auto no-scrollbar mask-linear-gradient">
+        {/* Center: Actions Toolbar — Desktop (horizontal scroll) */}
+        <div className="hidden md:flex flex-1 items-center justify-start gap-2 overflow-x-auto no-scrollbar mask-linear-gradient">
 
           <Divider />
 
@@ -252,6 +267,115 @@ const ControlBar: React.FC<ControlBarProps> = ({
             <IconButton onClick={onMoveSavedPhotos} disabled={savedPhotoCount === 0} icon={<Save className="w-5 h-5" />} title="Move Saved Photos" className="text-green-600 dark:text-green-500 hover:bg-green-100 dark:hover:bg-green-900/30"/>
             <IconButton onClick={onDeleteSelected} disabled={selectedPhotoCount === 0} icon={<Trash2 className="w-5 h-5" />} title="Delete Selected" className="text-red-600 dark:text-red-500 hover:bg-red-100 dark:hover:bg-red-900/30"/>
           </div>
+        </div>
+
+        {/* Center: Actions Toolbar — Mobile (dropdown) */}
+        <div className="flex md:hidden flex-1 items-center justify-end gap-2" ref={mobileMenuRef}>
+          {/* More Actions Button */}
+          <button
+              onClick={() => setMobileMenuOpen(!isMobileMenuOpen)}
+              className={`p-2 rounded-lg transition-colors ${isMobileMenuOpen ? 'bg-gray-200 dark:bg-gray-600 text-primary' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+              title="More actions"
+          >
+            <MoreHorizontal className="w-5 h-5" />
+          </button>
+
+          {/* Dropdown Menu */}
+          {isMobileMenuOpen && (
+              <div className="absolute top-full right-4 mt-2 w-72 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl z-50 p-3 max-h-[70vh] overflow-y-auto">
+                {/* View Modes */}
+                <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 px-1 mb-1 block">View Mode</label>
+                <div className="flex bg-gray-100 dark:bg-gray-700/50 p-1 rounded-lg mb-3">
+                  <IconButton
+                      active={viewMode === 'grid'}
+                      onClick={() => { setViewMode('grid'); setMobileMenuOpen(false); }}
+                      icon={<LayoutGrid className="w-4 h-4" />}
+                      title="Grid"
+                      activeClass="bg-white dark:bg-gray-600 shadow-sm text-primary"
+                      inactiveClass="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                      className="!p-1.5 flex-1"
+                  />
+                  <IconButton
+                      active={viewMode === 'folder'}
+                      onClick={() => { setViewMode('folder'); setMobileMenuOpen(false); }}
+                      icon={<FolderTree className="w-4 h-4" />}
+                      title="Folder"
+                      activeClass="bg-white dark:bg-gray-600 shadow-sm text-primary"
+                      inactiveClass="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                      className="!p-1.5 flex-1"
+                  />
+                  <IconButton
+                      active={viewMode === 'zen'}
+                      onClick={() => { setViewMode('zen'); setMobileMenuOpen(false); }}
+                      icon={<Sparkles className="w-4 h-4" />}
+                      title="Zen"
+                      activeClass="bg-white dark:bg-gray-600 shadow-sm text-primary"
+                      inactiveClass="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                      className="!p-1.5 flex-1"
+                  />
+                </div>
+
+                {/* Selection Tools */}
+                <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 px-1 mb-1 block">Selection</label>
+                <div className="flex gap-1 mb-3 flex-wrap">
+                  <IconButton onClick={() => { onSelectAll(); setMobileMenuOpen(false); }} disabled={noAnalyzedPhotos} icon={<CheckSquare className="w-5 h-5" />} title="Select All" />
+                  <IconButton onClick={() => { onClearSelection(); setMobileMenuOpen(false); }} disabled={selectedPhotoCount === 0} icon={<XSquare className="w-5 h-5" />} title="Clear Selection" />
+                  <IconButton
+                      active={isolateSelection}
+                      onClick={() => { onToggleIsolateSelection(); setMobileMenuOpen(false); }}
+                      disabled={selectedPhotoCount === 0 && !isolateSelection}
+                      icon={isolateSelection ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
+                      title={isolateSelection ? "Show All" : "Isolate Sel."}
+                      activeClass="bg-blue-500 text-white"
+                  />
+                </div>
+
+                {/* Magic / AI Tools */}
+                <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 px-1 mb-1 block">AI Tools</label>
+                <div className="flex gap-1 mb-3 flex-wrap">
+                  <IconButton onClick={() => { onApplyRules(); setMobileMenuOpen(false); }} disabled={noAnalyzedPhotos} icon={<Zap className="w-5 h-5" />} title="Apply Rules" className="text-yellow-600 dark:text-yellow-400" />
+                  <IconButton onClick={() => { onCreateRuleFromSelection(); setMobileMenuOpen(false); }} disabled={selectedPhotoCount === 0} icon={<Wand2 className="w-5 h-5" />} title="Auto Rule" className="text-purple-600 dark:text-purple-400" />
+                  <IconButton onClick={() => { onFindDuplicates(); setMobileMenuOpen(false); }} disabled={noAnalyzedPhotos} icon={<Copy className="w-5 h-5" />} title="Duplicates" className="text-indigo-600 dark:text-indigo-400" />
+                </div>
+
+                {/* Filters / Isolations */}
+                <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 px-1 mb-1 block">Filters</label>
+                <div className="flex gap-1 mb-3 flex-wrap">
+                  <IconButton
+                      active={isolateDuplicates}
+                      onClick={() => { onToggleIsolateDuplicates(); setMobileMenuOpen(false); }}
+                      disabled={!isolateDuplicates}
+                      icon={<Copy className="w-5 h-5" />}
+                      title={isolateDuplicates ? "Duplicates: On" : "Duplicates"}
+                      activeClass="bg-indigo-500 text-white"
+                      className={!isolateDuplicates ? "opacity-50" : ""}
+                  />
+                  <IconButton
+                      active={isolateBlurry}
+                      onClick={() => { onToggleIsolateBlurry(); setMobileMenuOpen(false); }}
+                      disabled={blurryPhotoCount === 0 && !isolateBlurry}
+                      icon={<AlertTriangle className="w-5 h-5" />}
+                      title={isolateBlurry ? "Blurry: On" : "Blurry"}
+                      activeClass="bg-orange-500 text-white"
+                  />
+                  <IconButton
+                      active={isolateSaved}
+                      onClick={() => { onToggleIsolateSaved(); setMobileMenuOpen(false); }}
+                      disabled={savedPhotoCount === 0 && !isolateSaved}
+                      icon={<Heart className={`w-5 h-5 ${isolateSaved ? 'fill-current' : ''}`} />}
+                      title={isolateSaved ? "Saved: On" : "Saved"}
+                      activeClass="bg-pink-500 text-white"
+                  />
+                </div>
+
+                {/* Destructive Actions */}
+                <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 px-1 mb-1 block">Actions</label>
+                <div className="flex gap-1 flex-wrap">
+                  <IconButton onClick={() => { onMoveSavedPhotos(); setMobileMenuOpen(false); }} disabled={savedPhotoCount === 0} icon={<Save className="w-5 h-5" />} title="Move Saved" className="text-green-600 dark:text-green-500"/>
+                  <IconButton onClick={() => { onDeleteSelected(); setMobileMenuOpen(false); }} disabled={selectedPhotoCount === 0} icon={<Trash2 className="w-5 h-5" />} title="Delete Selected" className="text-red-600 dark:text-red-500"/>
+                </div>
+              </div>
+          )}
         </div>
 
         {/* Right: Profile */}
