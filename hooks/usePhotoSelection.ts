@@ -18,7 +18,7 @@ export const usePhotoSelection = (
     }
   }, [selectedPhotos.length, isolateSelection]);
 
-  const handleSelectPhoto = useCallback((id: string) => {
+  const handleSelectPhoto = (id: string) => {
     setPhotos(prev => {
       const newPhotos = new Map(prev);
       const photo = newPhotos.get(id);
@@ -26,14 +26,13 @@ export const usePhotoSelection = (
         const isBecomingDeselected = photo.selected;
         const update: Partial<Photo> = { selected: !photo.selected };
         if (isBecomingDeselected) {
-          // Clear matched rules on manual deselect
           update.matchedRules = undefined;
         }
         newPhotos.set(id, { ...photo, ...update });
       }
       return newPhotos;
     });
-  }, [setPhotos]);
+  };
 
   const handleToggleIsolateSelection = useCallback(() => {
     // Only allow enabling isolation if photos are selected.

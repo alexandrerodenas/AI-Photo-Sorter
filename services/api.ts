@@ -1,6 +1,7 @@
 
 import type { Prediction, ModelsLoadState, ModelLoadStatus } from './types.ts';
-import { detectBlur } from './blurDetection.ts'; // Import the new service
+import { detectBlur } from './blurDetection.ts';
+import { analyzePhoto as workerAnalyzePhoto, ensureWorkerInitialized } from './analysisClient.ts';
 
 export { detectBlur }; // Re-export for consumption
 
@@ -126,6 +127,11 @@ export const preloadModels = () => {
   console.log('Preloading AI models...');
   getClassificationModel();
   getDetectionModel();
+
+  // Also try to initialize the Web Worker in the background
+  ensureWorkerInitialized().catch(() => {
+    console.log('Web Worker not available, using main thread for analysis.');
+  });
 };
 
 // Helper function to create an Image element from a data URL
@@ -198,3 +204,76 @@ export const getTF = async () => {
   await initializeTf();
   return tf;
 }
+
+// --- Worker-based batch analysis (falls back to main thread) ---
+
+interface BatchAnalysisOptions {
+  dataUrl: string;
+  photoId: string;
+  blurThreshold: number;
+  sharpThreshold: number;
+}
+
+interface BatchAnalysisResult {
+  photoId: string;
+  classifications: Prediction[];
+  detections: Prediction[];
+  embedding: number[];
+  blurScore: number;
+  blurRaw: number;
+  blurLevel: 'sharp' | 'ok' | 'blurry';
+  metadata: {
+    width: number;
+    height: number;
+  };
+}
+
+/**
+ * Analyze a photo using all AI models.
+ * Uses Web Worker if available, falls back to main thread.
+ */
+export const analyzePhotoBatch = async (options: BatchAnalysisOptions): Promise<BatchAnalysisResult> => {
+  const { dataUrl, photoId, blurThreshold, sharpThreshold } = options;
+
+  // Try Web Worker first
+  if (typeof Worker !== 'undefined') {
+    try {
+      const result = await workerAnalyzePhoto({
+        dataUrl,
+        photoId,
+        blurThreshold,
+        sharpThreshold,
+      });
+      return result as BatchAnalysisResult;
+    } catch (workerError) {
+      console.warn('Worker analysis failed, falling back to main thread:', workerError);
+      // Fall through to main thread
+    }
+  }
+
+  // Main thread fallback
+  const img = await createImageElement(dataUrl);
+
+  const metadata = {
+    width: img.naturalWidth,
+    height: img.naturalHeight,
+  };
+
+  const [classifications, detections, embedding, blurResult] = await Promise.all([
+    classifyImage(dataUrl),
+    detectObjects(dataUrl),
+    generateEmbedding(dataUrl),
+    detectBlur(img, { blurry: blurThreshold, sharp: sharpThreshold }),
+  ]);
+
+  return {
+    photoId,
+    classifications,
+    detections,
+    embedding,
+    blurScore: blurResult.score,
+    blurRaw: blurResult.raw,
+    blurLevel: blurResult.level,
+    metadata,
+  };
+};

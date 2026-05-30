@@ -2,7 +2,7 @@
 import React, { useMemo } from 'react';
 import type { Photo, ThumbnailSize } from '../services/types.ts';
 import { PhotoStatus } from '../services/types.ts';
-import PhotoCard from './PhotoCard.tsx';
+import PhotoGrid from './PhotoGrid.tsx';
 import FolderView from './FolderView.tsx';
 import ZenMode from './ZenMode.tsx';
 import {
@@ -13,33 +13,6 @@ import {
   Copy,
   AlertTriangle,
 } from 'lucide-react';
-
-interface PhotoGridProps {
-  photos: Photo[];
-  onSelectPhoto: (id: string) => void;
-  onViewPhoto: (photo: Photo) => void;
-  thumbnailSize: ThumbnailSize;
-  onFilterChange: (label: string) => void;
-  onToggleSavePhoto: (id: string) => void;
-}
-
-const PhotoGrid: React.FC<PhotoGridProps> = ({ photos, onSelectPhoto, onViewPhoto, thumbnailSize, onFilterChange, onToggleSavePhoto }) => {
-  const sizeClasses: Record<ThumbnailSize, string> = {
-    XS: 'grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 2xl:grid-cols-12',
-    S: 'grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-10',
-    M: 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8',
-    L: 'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6',
-    XL: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5',
-  };
-
-  return (
-      <div className={`grid ${sizeClasses[thumbnailSize]} gap-4`}>
-        {photos.map(photo => (
-            <PhotoCard key={photo.id} photo={photo} onSelect={onSelectPhoto} onView={onViewPhoto} onFilterChange={onFilterChange} onToggleSave={onToggleSavePhoto} />
-        ))}
-      </div>
-  );
-};
 
 interface PhotoContentProps {
   photos: Map<string, Photo>;
