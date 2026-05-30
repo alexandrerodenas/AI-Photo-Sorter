@@ -66,50 +66,34 @@ export const usePhotoAnalysis = (
         reader.readAsDataURL(fileBlob);
       });
 
-      // Extract metadata (Image object loading needed for dims)
-      // Creating the image element once here is efficient for reuse across 4 AI calls
-      const img = new Image();
-      img.src = dataUrl;
-      await new Promise((resolve) => { img.onload = resolve; });
-      const metadata = {
-        width: img.naturalWidth,
-        height: img.naturalHeight,
-        size: fileBlob.size,
-        lastModified: 0 // File System Handle usually provides this, not the blob fetch directly here, but we can't easily access the handle here without passing it. Ignoring for now or defaulting.
-      };
-
       const blurThreshold = userProfileRef.current?.blurThreshold ?? 100;
       const sharpThreshold = userProfileRef.current?.sharpThreshold ?? 300;
 
-      // Run all analysis in parallel
-      // 1. Classification (MobileNet)
-      // 2. Detection (COCO-SSD)
-      // 3. Embedding (MobileNet Feature Vector)
-      // 4. Blur Detection (Laplacian Variance)
-      const [classifications, detections, embedding, blurResult] = await Promise.all([
-        api.classifyImage(dataUrl),
-        api.detectObjects(dataUrl),
-        api.generateEmbedding(dataUrl),
-        api.detectBlur(img, { blurry: blurThreshold, sharp: sharpThreshold })
-      ]);
+      // Use batch analysis (Web Worker if available, fallback to main thread)
+      const result = await api.analyzePhotoBatch({
+        dataUrl,
+        photoId,
+        blurThreshold,
+        sharpThreshold,
+      });
 
       if (!tfBackend) setTfBackend(api.getTfBackend());
 
       const threshold = userProfileRef.current?.unknownThreshold ?? 10;
-      const isUncategorized = classifications.length === 0 || classifications.every(p => (p.score * 100) < threshold);
+      const isUncategorized = result.classifications.length === 0 || result.classifications.every(p => (p.score * 100) < threshold);
 
       let matchedCustomLabel: string | undefined = undefined;
       const customLabels = userProfileRef.current?.customLabels ?? [];
       if (customLabels.length > 0) {
         const allPhotoLabels = new Set([
-          ...classifications.map(c => c.label.toLowerCase()),
-          ...detections.map(d => d.label.toLowerCase())
+          ...result.classifications.map(c => c.label.toLowerCase()),
+          ...result.detections.map(d => d.label.toLowerCase())
         ]);
 
         for (const customLabel of customLabels) {
           if (customLabel.labels.some(l => allPhotoLabels.has(l))) {
             matchedCustomLabel = customLabel.name;
-            break; // Found the first match
+            break;
           }
         }
       }
@@ -122,13 +106,13 @@ export const usePhotoAnalysis = (
           const updatedPhoto: Photo = {
             ...currentPhoto,
             status: finalStatus,
-            classifications,
-            detections,
-            embedding,
-            blurScore: blurResult.score,
-            blurRaw: blurResult.raw,
-            blurLevel: blurResult.level,
-            metadata: { ...metadata, lastModified: Date.now() }, // Fallback timestamp
+            classifications: result.classifications,
+            detections: result.detections,
+            embedding: result.embedding,
+            blurScore: result.blurScore,
+            blurRaw: result.blurRaw,
+            blurLevel: result.blurLevel,
+            metadata: { ...result.metadata, size: fileBlob.size, lastModified: Date.now() },
             customLabel: matchedCustomLabel,
           };
 
