@@ -72,18 +72,13 @@ Open [http://localhost:8080](http://localhost:8080).
 
 | # | Improvement | Why |
 |---|-------------|-----|
-| 1 | **Virtual Scrolling** (`@tanstack/virtual`) | 1000+ photos = 1000+ DOM nodes. Replace the flat `.map()` with a virtualized list, rendering only visible + overscan nodes. |
-| 2 | **Web Worker for TensorFlow.js** | `classifyImage`, `detectObjects`, `generateEmbedding`, and `detectBlur` all run on the main thread. A batch of 100 photos can freeze the UI for seconds. |
-| 3 | **IndexedDB Thumbnail Cache** | Every directory load re-creates blob URLs from scratch. Returning to a previously-opened folder re-analyzes thumbnails. |
-| 4 | **Revoke Blob URLs on Unmount** | `URL.createObjectURL()` is never revoked. Switching directories leaks memory until the tab is closed. |
+| 1 | **IndexedDB Thumbnail Cache** | Every directory load re-creates blob URLs from scratch. Returning to a previously-opened folder re-analyzes thumbnails. |
 
 ### Code Quality
 
 | # | Improvement |
 |---|-------------|
-| 5 | Merge duplicate `useEffect` blocks in `PhotoCard` (IntersectionObserver + click cleanup) |
-| 6 | Reduce unnecessary `useCallback` wrapping — memoization cost sometimes outweighs rerender cost |
-| 7 | Replace `(window as any)` with a typed `.d.ts` for the File System Access API |
+| 2 | Reduce unnecessary `useCallback` wrapping — memoization cost sometimes outweighs rerender cost |
 
 ### Features (Future)
 
@@ -101,6 +96,4 @@ Open [http://localhost:8080](http://localhost:8080).
 
 | # | Improvement | Why |
 |---|-------------|-----|
-| 8 | **PostCSS Tailwind** (replace CDN) | `index.html` loads `cdn.tailwindcss.com` at runtime (~100 KB). Switching to Vite + PostCSS eliminates the dependency and shrinks the bundle. |
-| 9 | **Stable React version in import map** | Import map points to `19.0.0-rc.0` while `package.json` depends on `^19.1.0` (stable). |
-| 10 | **Remove `@types/node` dev dependency** | Installed but never imported. |
+| 3 | **PostCSS Tailwind** (replace CDN) | `index.html` loads `cdn.tailwindcss.com` at runtime (~100 KB). Switching to Vite + PostCSS eliminates the dependency and shrinks the bundle. |
